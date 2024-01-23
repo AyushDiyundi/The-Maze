@@ -11,6 +11,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -153,6 +154,7 @@ public class MenuScreen implements Screen {
         welcomeLabel = createLabel("Welcome to BlazeMaze  ", "title",!pauseMenuVisible);
         tableM.top();
         tableM.add(welcomeLabel).padBottom(80).row();
+        welcomeLabel.setAlignment(Align.center);
 
         // Add a button to start the game
         goToGameButton = createButton("Play", this::goToGame,!pauseMenuVisible);
@@ -177,6 +179,7 @@ public class MenuScreen implements Screen {
         pausedLabel = createLabel(" Game Paused ", "title",pauseMenuVisible);
         tableP.top();
         tableP.add(pausedLabel).padBottom(80).row();
+        pausedLabel.setAlignment(Align.center);
         // Add buttons to the paused menu
         resumeGame = createButton("Resume", game::resume,pauseMenuVisible);
         newGame = createButton("New Game", this::goToGame,pauseMenuVisible);
@@ -204,6 +207,7 @@ public class MenuScreen implements Screen {
         levelLabel = createLabel("Choose Your Map", "title",visible);
         tableL.top();
         tableL.add(levelLabel).padBottom(80).row();
+        levelLabel.setAlignment(Align.center);
 
         level1 = createButton("Level 1", () -> game.getGameScreen().loadMap("level1"),visible);
         level2 = createButton("Level 2", () -> game.getGameScreen().loadMap("level2"),visible);
