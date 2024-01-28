@@ -17,7 +17,7 @@ public abstract class GameObject {
     }
 
     public void draw(SpriteBatch batch) {
-        batch.draw(textureRegion, x, y);
+        batch.draw(textureRegion,this.x,this.y);
     }
     public Rectangle getBoundingBox() {
         return boundingBox;
