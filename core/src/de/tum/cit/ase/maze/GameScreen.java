@@ -44,7 +44,6 @@ public class GameScreen implements Screen {
         gameObjects = new ArrayList<>();
         textureLoader = new TextureLoader(Gdx.files.internal("basictiles.png"));
         enemyLoader = new TextureLoader(Gdx.files.internal("mobs.png"));
-        characterLoader = new TextureLoader(Gdx.files.internal("character.png"));
         gameMusic = Gdx.audio.newMusic(Gdx.files.internal("InGame.mp3"));
         loadGameObjects(mazeData);
         calculateMazeDimensions();
@@ -88,7 +87,8 @@ public class GameScreen implements Screen {
                         break;
                     case 1:
                         gameObjects.add(new Entry(entryRegion, x, y));
-                        setSpawnPoint(x+1,y);
+                         spawnX = x;
+                       spawnY = y;
                         initializeCharacter();
                         break;
                     case 2:
@@ -109,41 +109,48 @@ public class GameScreen implements Screen {
             }
         }
     }
-    private void setSpawnPoint(float x, float y) {
-        spawnX = x;
-        spawnY = y;
-    }
+
     private void initializeCharacter() {
-        TextureRegion characterRegion = characterLoader.getTextureRegion(0, 0, 16, 16); // Adjust coordinates and size as needed
-
-        // If the character has multiple frames for animation, split the texture and create an animation
-        // Otherwise, just use a single frame as below
-        Animation<TextureRegion> characterAnimation = new Animation<>(0.1f, characterRegion);
-
-        character = new Character(characterAnimation, spawnX * 16, spawnY * 16); // Position character at spawn point
+        character = new Character(game.getCharacterUpAnimation(), game.getCharacterDownAnimation(),
+                game.getCharacterLeftAnimation(), game.getCharacterRightAnimation(),
+                spawnX  , spawnY );
     }
     @Override
-    public void render(float delta) {
+
         // Clear the screen, update the game state, etc.
-        ScreenUtils.clear(0, 0, 0, 1);
-        handleInput(delta);
+        public void render ( float delta){
+            // Clear the screen
+            ScreenUtils.clear(0, 0, 0, 1);
+
+            // Handle user input
+            handleInput(delta);
+
+            // Update the character and camera position
             if (character != null) {
+                character.move(delta); // Update character movement
                 character.update(delta); // Update character state
-                updateCameraPosition(delta);
+                updateCameraPosition(delta); // Update the camera to follow the character
             }
-        camera.update();
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
-        for (GameObject gameObject : gameObjects) {
-            gameObject.draw(batch);
+
+            // Update the camera and set the projection matrix
+            camera.update();
+            batch.setProjectionMatrix(camera.combined);
+
+            // Draw all game objects
+            batch.begin();
+            for (GameObject gameObject : gameObjects) {
+                gameObject.draw(batch);
+            }
+
+            // Draw the character
+            if (character != null) {
+                character.draw(batch);
+            }
+            batch.end();
         }
-        if (character != null) {
-            character.draw(batch);
-        }
-        batch.end();
-    }
+
     private void updateCameraPosition(float delta) {
-        float lerp = 0.1f; // For smooth camera movement
+        float lerp =  0.1f; // For smooth camera movement
         float cameraX = camera.position.x + (character.getX() - camera.position.x) * lerp;
         float cameraY = camera.position.y + (character.getY() - camera.position.y) * lerp;
         // Clamp camera position to keep character within the middle 80% of the screen
@@ -151,6 +158,7 @@ public class GameScreen implements Screen {
         float cameraMaxX = mazeWidth * (1 - CAMERA_PADDING);
         float cameraMinY = mazeHeight * CAMERA_PADDING;
         float cameraMaxY = mazeHeight * (1 - CAMERA_PADDING);
+        camera.zoom = 0.2f; // Adjust the zoom level as needed
 
         camera.position.x = MathUtils.clamp(cameraX, cameraMinX, cameraMaxX);
         camera.position.y = MathUtils.clamp(cameraY, cameraMinY, cameraMaxY);
@@ -210,5 +218,21 @@ public class GameScreen implements Screen {
     public void dispose() {
         textureLoader.dispose();
       batch.dispose();
+    }
+
+    public float getSpawnX() {
+        return spawnX;
+    }
+
+    public void setSpawnX(float spawnX) {
+        this.spawnX = spawnX;
+    }
+
+    public float getSpawnY() {
+        return spawnY;
+    }
+
+    public void setSpawnY(float spawnY) {
+        this.spawnY = spawnY;
     }
 }
