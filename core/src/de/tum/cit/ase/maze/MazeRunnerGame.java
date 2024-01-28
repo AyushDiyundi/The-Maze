@@ -21,6 +21,7 @@ public class MazeRunnerGame extends Game {
     private MenuScreen menuScreen;
     private GameScreen gameScreen;
     private final Maps maps;
+    private SoundSettings soundSettings;
     private boolean paused = false;
 
     public MazeRunnerGame(NativeFileChooser fileChooser) {
@@ -32,6 +33,7 @@ public class MazeRunnerGame extends Game {
         skin = new Skin(Gdx.files.internal("craft/craftacular-ui.json"));
         maps.configureMaps();
         loadCharacterAnimation();
+        soundSettings=new SoundSettings();
         goToMenu();
     }
 
@@ -66,6 +68,7 @@ public class MazeRunnerGame extends Game {
         }
         if (menuScreen == null) {
             menuScreen = new MenuScreen(this);
+            menuScreen.getMenuMusic().setVolume(soundSettings.getMenuMusicVolume());
         }else {if (!paused) {
             menuScreen.playMenuMusic();
         }
@@ -84,12 +87,8 @@ public class MazeRunnerGame extends Game {
                 setScreen(gameScreen);
             }
             else {
-                int[][] defaultMazeData = maps.loadDefaultMazeData();
-                if (defaultMazeData != null) {
-                    startGameWithMaze(defaultMazeData);
-                    gameScreen.playGameMusic();
+                 maps.selectMap(0);
                 }
-            }
     }
     public void startGameWithMaze(int[][] mazeData) {
         disposeMenuScreen();
@@ -100,9 +99,9 @@ public class MazeRunnerGame extends Game {
         setScreen(gameScreen);
     }
 
-    public void loadMaps() {
+    public void loadMaps(int n) {
         paused=false;
-        maps.chooseMap();
+        maps.selectMap(n);
     }
     @Override
     public void dispose() {
@@ -177,5 +176,9 @@ public class MazeRunnerGame extends Game {
 
     public void setCharacterUpAnimation(Animation<TextureRegion> characterUpAnimation) {
         this.characterUpAnimation = characterUpAnimation;
+    }
+
+    public SoundSettings getSoundSettings() {
+        return soundSettings;
     }
 }

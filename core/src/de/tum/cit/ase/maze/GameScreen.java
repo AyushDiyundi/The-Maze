@@ -169,6 +169,7 @@ public class GameScreen implements Screen {
     }
     public void playGameMusic() {
         if (gameMusic != null) {
+            gameMusic.setVolume(game.getSoundSettings().getGameMusicVolume());
             gameMusic.setLooping(true);
             gameMusic.play();
         }
