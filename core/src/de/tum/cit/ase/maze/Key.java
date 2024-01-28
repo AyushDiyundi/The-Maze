@@ -4,7 +4,8 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 public class Key extends GameObject {
     public Key(TextureRegion region,float x, float y) {
-        super(region,x, y);
+        super(region,x, y, region.getRegionWidth(), region.getRegionHeight());
+
         // The textureRegion will be set by the GameObjectFactory or similar class
     }
 }

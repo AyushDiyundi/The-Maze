@@ -4,11 +4,14 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 import java.util.ArrayList;
@@ -25,12 +28,14 @@ public class GameScreen implements Screen {
     private TextureLoader textureLoader,enemyLoader,characterLoader;
     private final float CAMERA_PADDING = 0.1f;
     private float spawnX, spawnY;
+    private ShapeRenderer shapeRenderer;
     private int[][] mazeData;
     private float initialZoom;
     private float minCameraX, maxCameraX, minCameraY, maxCameraY;
     public GameScreen(MazeRunnerGame game, int[][] mazeData) {
         this.game = game;
         this.mazeData = mazeData;
+        shapeRenderer = new ShapeRenderer();
         initialize();
         initialZoom = calculateInitialZoom();
         calculateCameraConstraints();
@@ -43,7 +48,6 @@ public class GameScreen implements Screen {
         gameObjects = new ArrayList<>();
         textureLoader = new TextureLoader(Gdx.files.internal("basictiles.png"));
         enemyLoader = new TextureLoader(Gdx.files.internal("mobs.png"));
-        characterLoader = new TextureLoader(Gdx.files.internal("character.png"));
         gameMusic = Gdx.audio.newMusic(Gdx.files.internal("InGame.mp3"));
         loadGameObjects(mazeData);
         calculateMazeDimensions();
@@ -87,8 +91,8 @@ public class GameScreen implements Screen {
                         break;
                     case 1:
                         gameObjects.add(new Entry(entryRegion, x, y));
-                        setSpawnPoint(x+1,y);
-                        initializeCharacter();
+                         spawnX = x+1;
+                         spawnY = y;
                         break;
                     case 2:
                         gameObjects.add(new Exit(exitRegion, x, y));
@@ -107,42 +111,61 @@ public class GameScreen implements Screen {
                 }
             }
         }
+        initializeCharacter();
     }
-    private void setSpawnPoint(float x, float y) {
-        spawnX = x;
-        spawnY = y;
-    }
+
     private void initializeCharacter() {
-        TextureRegion characterRegion = characterLoader.getTextureRegion(0, 0, 16, 16); // Adjust coordinates and size as needed
-
-        // If the character has multiple frames for animation, split the texture and create an animation
-        // Otherwise, just use a single frame as below
-        Animation<TextureRegion> characterAnimation = new Animation<>(0.1f, characterRegion);
-
-        character = new Character(characterAnimation, spawnX * 16, spawnY * 16); // Position character at spawn point
+        character = new Character(game.getCharacterUpAnimation(), game.getCharacterDownAnimation(),
+                game.getCharacterLeftAnimation(), game.getCharacterRightAnimation(),
+                spawnX *16 , spawnY *16);
+        character.setGameScreen(this);
     }
-    @Override
-    public void render(float delta) {
-        // Clear the screen, update the game state, etc.
-        ScreenUtils.clear(0, 0, 0, 1);
-        handleInput(delta);
-            if (character != null) {
-                character.update(delta); // Update character state
-                updateCameraPosition(delta);
-            }
-        camera.update();
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
+    public Collidable checkCollision(float potentialX, float potentialY, Character character) {
+        Rectangle potentialBounds = new Rectangle(potentialX, potentialY, character.getBoundingBox().width, character.getBoundingBox().height);
         for (GameObject gameObject : gameObjects) {
-            gameObject.draw(batch);
+            if (gameObject instanceof Collidable && gameObject != character) {
+                if (potentialBounds.overlaps(gameObject.getBoundingBox())) {
+                    System.out.println("collision  "+gameObject);
+                    return (Collidable) gameObject;
+                }
+            }
         }
-        if (character != null) {
-            character.draw(batch);
-        }
-        batch.end();
+        return null; // No collision detected
     }
+
+    @Override
+
+        // Clear the screen, update the game state, etc.
+        public void render ( float delta){
+            // Clear the screen
+            ScreenUtils.clear(0, 0, 0, 1);
+
+            // Handle user input
+            handleInput(delta);
+
+            // Update the character and camera position
+            if (character != null) {
+                character.move(delta); // Update character movement
+                character.update(delta); // Update character state
+                updateCameraPosition(delta); // Update the camera to follow the character
+            }
+            // Update the camera and set the projection matrix
+            camera.update();
+            batch.setProjectionMatrix(camera.combined);
+            // Draw all game objects
+            batch.begin();
+            for (GameObject gameObject : gameObjects) {
+                gameObject.draw(batch);
+            }
+            // Draw the character
+            if (character != null) {
+                character.draw(batch);
+            }
+            batch.end();
+        }
+
     private void updateCameraPosition(float delta) {
-        float lerp = 0.1f; // For smooth camera movement
+        float lerp =  0.1f; // For smooth camera movement
         float cameraX = camera.position.x + (character.getX() - camera.position.x) * lerp;
         float cameraY = camera.position.y + (character.getY() - camera.position.y) * lerp;
         // Clamp camera position to keep character within the middle 80% of the screen
@@ -150,6 +173,7 @@ public class GameScreen implements Screen {
         float cameraMaxX = mazeWidth * (1 - CAMERA_PADDING);
         float cameraMinY = mazeHeight * CAMERA_PADDING;
         float cameraMaxY = mazeHeight * (1 - CAMERA_PADDING);
+        camera.zoom = 0.2f; // Adjust the zoom level as needed
 
         camera.position.x = MathUtils.clamp(cameraX, cameraMinX, cameraMaxX);
         camera.position.y = MathUtils.clamp(cameraY, cameraMinY, cameraMaxY);
@@ -160,6 +184,7 @@ public class GameScreen implements Screen {
     }
     public void playGameMusic() {
         if (gameMusic != null) {
+            gameMusic.setVolume(game.getSoundSettings().getGameMusicVolume());
             gameMusic.setLooping(true);
             gameMusic.play();
         }
@@ -209,5 +234,21 @@ public class GameScreen implements Screen {
     public void dispose() {
         textureLoader.dispose();
       batch.dispose();
+    }
+
+    public float getSpawnX() {
+        return spawnX;
+    }
+
+    public void setSpawnX(float spawnX) {
+        this.spawnX = spawnX;
+    }
+
+    public float getSpawnY() {
+        return spawnY;
+    }
+
+    public void setSpawnY(float spawnY) {
+        this.spawnY = spawnY;
     }
 }

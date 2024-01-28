@@ -26,8 +26,33 @@ public class Maps {
         config.nameFilter = (dir, name) -> name.endsWith("properties");
         config.title = "Choose map file";
     }
+    public void selectMap(int choice) {
+        switch (choice) {
+            case 1:
+                handleFileChosen(Gdx.files.internal("maps/level-1.properties"));
+                break;
+            case 2:
+                handleFileChosen(Gdx.files.internal("maps/level-2.properties"));
+                break;
+            case 3:
+                handleFileChosen(Gdx.files.internal("maps/level-3.properties"));
+                break;
+            case 4:
+                handleFileChosen(Gdx.files.internal("maps/level-4.properties"));
+                break;
+            case 5:
+                handleFileChosen(Gdx.files.internal("maps/level-5.properties"));;
+                break;
+            case 6:
+                externalMap();
+                break;
+            default:
+                handleFileChosen(Gdx.files.internal("maps/level-1.properties"));
+        }
+    }
 
-    public void chooseMap() {
+    public void externalMap()
+    {
         if (fileChooser == null) {
             System.out.println("Map chooser not configured");
             return;
@@ -62,18 +87,6 @@ public class Maps {
             System.out.println("Failed reading data: " + e);
         }
     }
-    public int[][] loadDefaultMazeData() {
-        FileHandle fileHandle = Gdx.files.internal("defaultmap/level-1.properties");
-        Properties defaultMazeProperties = new Properties();
-        try {
-            defaultMazeProperties.load(fileHandle.reader());
-            return loadMazeData(defaultMazeProperties);
-        } catch (IOException e) {
-            System.out.println("Failed to read default maze data: " + e);
-            return null; // Or handle the error as appropriate
-        }
-    }
-
     private int[][] loadMazeData(Properties data) {
         int maxX = data.stringPropertyNames().stream()
                 .mapToInt(coord -> Integer.parseInt(coord.split(",")[0]))

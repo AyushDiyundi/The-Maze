@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Slider;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
@@ -26,10 +27,14 @@ public class MenuScreen implements Screen {
     private final Stage stage;
     private final MazeRunnerGame game;
     private SpriteBatch batch;
-    private Label welcomeLabel, pausedLabel, gameOver, victory,levelLabel;
+    private Label welcomeLabel, pausedLabel, gameOver, victory,levelLabel,soundSettingsLabel;
     private boolean pauseMenuVisible;
     private Texture backgroundTexture;
     private Music menuMusic;
+
+    public Music getMenuMusic() {
+        return menuMusic;
+    }
 
     public MenuScreen(MazeRunnerGame game) {
         this.game = game;
@@ -47,6 +52,7 @@ public class MenuScreen implements Screen {
     public void playMenuMusic() {
         if (menuMusic != null) {
             menuMusic.setLooping(true);
+            menuMusic.setVolume(game.getSoundSettings().getMenuMusicVolume());
             menuMusic.play();
         }
     }
@@ -81,11 +87,12 @@ public class MenuScreen implements Screen {
 
     private void mainMenu() {
         Table table = createMenuTable();
-        welcomeLabel = createLabel("Welcome to BlazeMaze  ","title" ,!pauseMenuVisible);
+        welcomeLabel = createLabel("The Maze  ","title" ,!pauseMenuVisible);
         welcomeLabel.setAlignment(Align.center);
         addMenuItems(table, welcomeLabel,
                 createButton("Play", game::goToGame, !pauseMenuVisible),
-                createButton("Maps",  game::loadMaps, !pauseMenuVisible),
+                createButton("Maps",  this::levelMenu, !pauseMenuVisible),
+                createButton("Sound Setting", this::soundMenu, !pauseMenuVisible),
                 createButton("Exit", Gdx.app::exit, !pauseMenuVisible)
         );
     }
@@ -94,14 +101,76 @@ public class MenuScreen implements Screen {
         Table table = createMenuTable();
         pausedLabel = createLabel(" Game Paused ", "title",pauseMenuVisible);
         pausedLabel.setAlignment(Align.center);
+        playMenuMusic();
         addMenuItems(table, pausedLabel,
                 createButton("Resume", game::goToGame, pauseMenuVisible),
-                createButton("Another Map", game::loadMaps, pauseMenuVisible),
+                createButton("Another Map", this::levelMenu, pauseMenuVisible),
+                createButton("Sound Setting", this::soundMenu, pauseMenuVisible),
                 createButton("Quit to Main Menu",() -> {
                     game.disposeMenuScreen();
                     game.setPaused(false);
                     game.goToMenu();
                 },pauseMenuVisible));
+    }
+    private void levelMenu() {
+        game.disposeMenuScreen();
+        Table table = createMenuTable();
+        levelLabel = createLabel("Select Level", "title", true);
+        levelLabel.setAlignment(Align.center);
+        playMenuMusic();
+
+        for (int i = 1; i <= 5; i++) {
+            int lvl = i;
+            addMenuItems(table, createButton("Level " +lvl, () -> game.loadMaps(lvl), true));
+        }
+
+        addMenuItems(table, createButton("Custom Level", () -> game.loadMaps(6), true));
+        addMenuItems(table, createButton("Back", () -> {
+            game.disposeMenuScreen();
+            game.goToMenu();
+        }, true));
+    }
+    private void soundMenu() {
+        game.disposeMenuScreen();
+        Table table = createMenuTable();
+        soundSettingsLabel = createLabel("Sound Settings", "title", true);
+        soundSettingsLabel.setAlignment(Align.center);
+        addMenuItems(table, soundSettingsLabel);
+        playMenuMusic();
+
+        // Create and add sliders for menu and game music volume
+        Slider menuMusicSlider = createSlider(game.getSoundSettings().getMenuMusicVolume());
+        Slider gameMusicSlider = createSlider(game.getSoundSettings().getGameMusicVolume());
+
+        menuMusicSlider.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                float value = menuMusicSlider.getValue();
+                game.getSoundSettings().setMenuMusicVolume(value);
+                menuMusic.setVolume(value); // Assuming menuMusic is accessible here
+            }
+        });
+
+        gameMusicSlider.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                float value = gameMusicSlider.getValue();
+                game.getSoundSettings().setGameMusicVolume(value);
+            }
+        });
+
+        addMenuItems(table, new Label("Menu Music", game.getSkin()), menuMusicSlider);
+        addMenuItems(table, new Label("Game Music", game.getSkin()), gameMusicSlider);
+        addMenuItems(table, createButton("Save & Return", () -> {
+            game.disposeMenuScreen();
+            game.goToMenu();
+        }, true));
+    }
+
+    private Slider createSlider(float initialValue) {
+        Slider slider = new Slider(0f, 1f, 0.2f, false, game.getSkin());
+        slider.setValue(initialValue);
+        return slider;
     }
 
     private Table createMenuTable() {
@@ -162,4 +231,5 @@ public class MenuScreen implements Screen {
         }
         pause();
     }
+
 }

@@ -15,9 +15,13 @@ public class MazeRunnerGame extends Game {
     private SpriteBatch spriteBatch;
     private Skin skin;
     private Animation<TextureRegion> characterDownAnimation;
+    private Animation<TextureRegion> characterUpAnimation;
+    private Animation<TextureRegion>  characterRightAnimation;
+    private Animation<TextureRegion>characterLeftAnimation;
     private MenuScreen menuScreen;
     private GameScreen gameScreen;
     private final Maps maps;
+    private SoundSettings soundSettings;
     private boolean paused = false;
 
     public MazeRunnerGame(NativeFileChooser fileChooser) {
@@ -29,22 +33,33 @@ public class MazeRunnerGame extends Game {
         skin = new Skin(Gdx.files.internal("craft/craftacular-ui.json"));
         maps.configureMaps();
         loadCharacterAnimation();
+        soundSettings=new SoundSettings();
         goToMenu();
     }
+
 
     private void loadCharacterAnimation() {
         Texture walkSheet = new Texture(Gdx.files.internal("character.png"));
         int frameWidth = 16;
         int frameHeight = 32;
-        int animationFrames = 4;
+        int framesPerAnimation = 4; // Number of frames per animation row
 
-        Array<TextureRegion> walkFrames = new Array<>(TextureRegion.class);
-        for (int col = 0; col < animationFrames; col++) {
-            walkFrames.add(new TextureRegion(walkSheet, col * frameWidth, 0, frameWidth, frameHeight));
+        TextureRegion[][] tmp = TextureRegion.split(walkSheet, frameWidth, frameHeight);
+
+        // Extract only the first four frames from each row
+        characterDownAnimation = extractAnimation(tmp, 0, framesPerAnimation);
+        characterUpAnimation = extractAnimation(tmp, 2, framesPerAnimation);
+        characterRightAnimation = extractAnimation(tmp, 1, framesPerAnimation);
+        characterLeftAnimation = extractAnimation(tmp, 3, framesPerAnimation);
+    }
+
+    // Utility method to extract animation frames
+    private Animation<TextureRegion> extractAnimation(TextureRegion[][] spriteSheet, int row, int frameCount) {
+        TextureRegion[] animationFrames = new TextureRegion[frameCount];
+        for (int col = 0; col < frameCount; col++) {
+            animationFrames[col] = spriteSheet[row][col];
         }
-
-        characterDownAnimation = new Animation<>(0.1f, walkFrames);
-        walkSheet.dispose();
+        return new Animation<>(0.1f, animationFrames);
     }
 
     public void goToMenu() {
@@ -53,6 +68,7 @@ public class MazeRunnerGame extends Game {
         }
         if (menuScreen == null) {
             menuScreen = new MenuScreen(this);
+            menuScreen.getMenuMusic().setVolume(soundSettings.getMenuMusicVolume());
         }else {if (!paused) {
             menuScreen.playMenuMusic();
         }
@@ -71,12 +87,8 @@ public class MazeRunnerGame extends Game {
                 setScreen(gameScreen);
             }
             else {
-                int[][] defaultMazeData = maps.loadDefaultMazeData();
-                if (defaultMazeData != null) {
-                    startGameWithMaze(defaultMazeData);
-                    gameScreen.playGameMusic();
+                 maps.selectMap(0);
                 }
-            }
     }
     public void startGameWithMaze(int[][] mazeData) {
         disposeMenuScreen();
@@ -87,9 +99,9 @@ public class MazeRunnerGame extends Game {
         setScreen(gameScreen);
     }
 
-    public void loadMaps() {
+    public void loadMaps(int n) {
         paused=false;
-        maps.chooseMap();
+        maps.selectMap(n);
     }
     @Override
     public void dispose() {
@@ -136,5 +148,37 @@ public class MazeRunnerGame extends Game {
 
     public Animation<TextureRegion> getCharacterDownAnimation() {
         return characterDownAnimation;
+    }
+
+    public void setCharacterDownAnimation(Animation<TextureRegion> characterDownAnimation) {
+        this.characterDownAnimation = characterDownAnimation;
+    }
+
+    public Animation<TextureRegion> getCharacterRightAnimation() {
+        return characterRightAnimation;
+    }
+
+    public void setCharacterRightAnimation(Animation<TextureRegion> characterRightAnimation) {
+        this.characterRightAnimation = characterRightAnimation;
+    }
+
+    public Animation<TextureRegion> getCharacterLeftAnimation() {
+        return characterLeftAnimation;
+    }
+
+    public void setCharacterLeftAnimation(Animation<TextureRegion> characterLeftAnimation) {
+        this.characterLeftAnimation = characterLeftAnimation;
+    }
+
+    public Animation<TextureRegion> getCharacterUpAnimation() {
+        return characterUpAnimation;
+    }
+
+    public void setCharacterUpAnimation(Animation<TextureRegion> characterUpAnimation) {
+        this.characterUpAnimation = characterUpAnimation;
+    }
+
+    public SoundSettings getSoundSettings() {
+        return soundSettings;
     }
 }
