@@ -54,7 +54,7 @@ public class Character extends GameObject implements Collidable {
         this.isInvincible = false;
         this.lives=3;
         this.invincibilityTime = 3f;
-        this.knockbackSpeed = 5f;
+        this.knockbackSpeed = 0.7f;
         this.knockbackTime = 1f;
         this.knockbackDirection = new Vector2();
     }
@@ -127,7 +127,8 @@ public class Character extends GameObject implements Collidable {
                 setPosition(previousX, previousY);
                 break;
             case ENEMY:
-                gameScreen.setLives(getLives()-1);
+                gameScreen.setLives(getLives() - 1); // Decrease lives
+                gameScreen.updateHUD(); // Update the HUD
                     Vector2 enemyPosition = new Vector2(((Enemy) other).getX(),((Enemy) other).getX());
                     applyKnockback(enemyPosition);
                     becomeInvincible();
@@ -146,12 +147,20 @@ public class Character extends GameObject implements Collidable {
                 setPosition(x,y);
                 break;
             case TRAP:
-                gameScreen.setLives(getLives()-1);
+                gameScreen.setLives(getLives() - 1); // Decrease lives
+                gameScreen.updateHUD(); // Update the HUD
+                becomeInvincible();
                 becomeInvincible();
                 break;
             case LIFE:
-                gameScreen.setLives(getLives()+1);
-                setPosition(x,y);
+                if (!((Life) other).isCollected()) {
+                    ((Life) other).setCollected(true); // Mark the life as collected
+                    gameScreen.setLives(getLives() + 1); // Increase the character's lives
+                    gameScreen.createHeartImage(); // Add a new heart image to the HUD
+                    // Remove the collected life from the gameObjects list
+                    gameScreen.getGameObjects().remove(other);
+                    setPosition(x, y); // Update the character's position
+                }
                 break;
 
 
@@ -263,7 +272,13 @@ public class Character extends GameObject implements Collidable {
 
     public void setLives(int lives) {
         this.lives = lives;
+
+        // Check if lives are 0 and transition to the menu screen
+        if (this.lives <= 0) {
+            gameScreen.goToMenuScreen();
+        }
     }
+
 
     public boolean isHasKey() {
         return hasKey;

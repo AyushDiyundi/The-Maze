@@ -47,6 +47,7 @@ public class GameScreen implements Screen {
     private Texture heartTexture;
     private Texture keyIconTexture;
     private Texture powerUpIconTexture;
+    private int collectedLives;
 
     private void loadHudTextures() {
         heartTexture = new Texture(Gdx.files.internal("heart.png"));
@@ -72,11 +73,7 @@ public class GameScreen implements Screen {
         calculateMazeDimensions();
         shapeRenderer = new ShapeRenderer();
     }
-    private void initializeHUD() {
-        hudStage = new Stage(new ScreenViewport());
-        loadHudTextures();
-        heartImages = new ArrayList<>();
-    }
+
 
 
     public GameScreen(MazeRunnerGame game, int[][] mazeData) {
@@ -207,29 +204,9 @@ public class GameScreen implements Screen {
                 spawnX * 16, spawnY * 16);
         character.setGameScreen(this);
     }
-    private void renderHUD(SpriteBatch batch) {
-        float hudX = 0; // Start at X coordinate 0
-        float hudY = mazeWidth+33; // Start at Y coordinate 100 on the map
-        int remainingLives =lives;
-        for (int i = 0; i < 3; i++) { // Assuming the maximum number of lives is 3
-            if (remainingLives > 0) {
-                batch.draw(heartTexture, hudX, hudY, 16, 16);
-                remainingLives--;
-            }
-            hudX += 20; // Move right for the next heart
-        }
 
-        // Draw key icon
-        if (character.isHasKey()) {
-            batch.draw(keyIconTexture, 0, hudY - 20, 16, 16);
-            hudY -= 20;
-        }
 
-        // Draw power-up icon
-        if (character.isPowerUpActive()) {
-            batch.draw(powerUpIconTexture, 0, hudY, 20, 20);
-        }
-    }
+
     public Collidable checkCollision(float potentialX, float potentialY, GameObject object) {
         Rectangle potentialBounds = new Rectangle(potentialX, potentialY, object.getBoundingBox().width, object.getBoundingBox().height);
         for (GameObject gameObject : gameObjects) {
@@ -279,14 +256,17 @@ public class GameScreen implements Screen {
             }
             gameObject.draw(batch);
         }
+
+
         // Draw the character
         if (character != null) {
             character.draw(batch);
         }
-        renderHUD(batch);
+
         batch.end();
         hudStage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f));
         hudStage.draw();
+
     }
     public Character getPlayer() {
         return character;
@@ -303,7 +283,7 @@ public class GameScreen implements Screen {
         }
 
         // Adjust zoom level if necessary
-        camera.zoom = 0.8f; // Adjust these values as needed
+        camera.zoom = 0.2f; // Adjust these values as needed
         camera.update();
     }
 
@@ -404,5 +384,62 @@ public class GameScreen implements Screen {
     public int getLives() {
         return lives;
     }
+    public List<GameObject> getGameObjects() {
+        return gameObjects;
+    }
+    private void initializeHUD() {
+        hudStage = new Stage(new ScreenViewport());
+        loadHudTextures();
+        heartImages = new ArrayList<>(); // Initialize the heartImages list
+
+        // Create heart images for the initial three lives
+        for (int i = 0; i < 3; i++) {
+            createHeartImage();
+        }
+    }
+    void createHeartImage() {
+        Image heartImage = new Image(heartTexture);
+
+        // Set the size of the heart image
+        float heartSize = 35f; // Change this to the desired size
+        heartImage.setSize(heartSize, heartSize);
+
+        float hudX = 0; // Start at X coordinate 0
+        float hudY = mazeHeight + 33; // Start at Y coordinate 100 on the map
+
+        // Calculate the position for the new heart image
+        float heartX = hudX + collectedLives * (heartSize + 10); // Adjust the spacing as needed
+        float heartY = hudY;
+
+        heartImage.setPosition(heartX, heartY);
+        hudStage.addActor(heartImage);
+        heartImages.add(heartImage);
+        collectedLives++;
+    }
+    public void updateHUD() {
+        if (!heartImages.isEmpty()) {
+            Image lastHeartImage = heartImages.remove(heartImages.size() - 1);
+            hudStage.getActors().removeValue(lastHeartImage, true);
+        }
+    }
+
+    public SpriteBatch getBatch() {
+        return batch;
+    }
+    public void goToMenuScreen() {
+        // Stop and dispose of current music if needed
+        if (gameMusic != null) {
+            gameMusic.stop();
+            gameMusic.dispose();
+        }
+        // Transition to the menu screen
+        game.setScreen(new MenuScreen(game));
+    }
+
+
 }
+
+
+
+
 

@@ -209,11 +209,13 @@ public class MenuScreen implements Screen {
 
     @Override
     public void show() {
+
         Gdx.input.setInputProcessor(stage);
         if (!game.isPaused()) {
             playMenuMusic();
         }
         resume();
+
     }
     @Override
     public void pause() {
