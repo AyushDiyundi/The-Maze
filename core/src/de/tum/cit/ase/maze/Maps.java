@@ -7,7 +7,10 @@ import games.spooky.gdx.nativefilechooser.NativeFileChooserCallback;
 import games.spooky.gdx.nativefilechooser.NativeFileChooserConfiguration;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
+import java.util.Random;
 
 public class Maps {
 
@@ -100,9 +103,13 @@ public class Maps {
 
         // Initialize the maze with default values (e.g., 0)
         int[][] mazeData = new int[maxX + 1][maxY + 1];
+        List<String> availableIndices = new ArrayList<>();
         for (int i = 0; i <= maxX; i++) {
             for (int j = 0; j <= maxY; j++) {
-                mazeData[i][j] = 7; // or another default value if needed
+                mazeData[i][j] = 9; // default value
+                if (!data.containsKey(i + "," + j)) {
+                    availableIndices.add(i + "," + j);
+                }
             }
         }
 
@@ -114,7 +121,25 @@ public class Maps {
             int intValue = Integer.parseInt(value.toString());
             mazeData[x][y] = intValue;
         });
+        int totalCells = (maxX + 1) * (maxY + 1);
+        int Total = (int) Math.sqrt(totalCells)/5;
+        Random rand = new Random();
 
+        for (int i = 0; i < Total; i++) {
+            if(i%2==0){   if (availableIndices.isEmpty()) {
+                break;
+            }
+                String[] lives = availableIndices.remove(rand.nextInt(availableIndices.size())).split(",");
+                mazeData[Integer.parseInt(lives[0])][Integer.parseInt(lives[1])] = 6;
+            }
+            else {
+
+                if (!availableIndices.isEmpty()) {
+                    String[] Flash = availableIndices.remove(rand.nextInt(availableIndices.size())).split(",");
+                    mazeData[Integer.parseInt(Flash[0])][Integer.parseInt(Flash[1])] = 7;
+                }
+            }
+        }
         return mazeData;
     }
 }

@@ -9,15 +9,16 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.utils.ScreenUtils;
-import org.w3c.dom.ls.LSOutput;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
+import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 public class GameScreen implements Screen {
     private MazeRunnerGame game;
@@ -27,7 +28,7 @@ public class GameScreen implements Screen {
     private Music gameMusic;
     private Character character;
     private int mazeWidth, mazeHeight;
-    private TextureLoader textureLoader,enemyLoader,characterLoader;
+    private TextureLoader textureLoader, enemyLoader,lifeLoader,powerLoader;
     private final float CAMERA_PADDING = 0.1f;
     private float spawnX, spawnY;
     private int[][] mazeData;
@@ -35,6 +36,25 @@ public class GameScreen implements Screen {
     private float minCameraX, maxCameraX, minCameraY, maxCameraY;
     private List<Vector2> enemySpawnPoints;
     private Animation<TextureRegion> bottomLeftEnemyAnimation;
+    private Stage hudStage;
+    private int lives; // Number of lives
+    private boolean hasKey;
+    private boolean powerUpActive;
+    private float powerUpTimer;
+
+    private ShapeRenderer shapeRenderer;
+    private List<Image> heartImages;
+    private Texture heartTexture;
+    private Texture keyIconTexture;
+    private Texture powerUpIconTexture;
+
+    private void loadHudTextures() {
+        heartTexture = new Texture(Gdx.files.internal("heart.png"));
+        // Load key icon texture
+        keyIconTexture = new Texture(Gdx.files.internal("powerUP.png"));
+        // Load power-up icon texture
+        powerUpIconTexture = new Texture(Gdx.files.internal("powerUp.png"));
+    }
 
     private void initialize() {
         batch = new SpriteBatch();
@@ -45,19 +65,31 @@ public class GameScreen implements Screen {
         enemySpawnPoints = new ArrayList<>(); // Initialize before loading game objects
         textureLoader = new TextureLoader(Gdx.files.internal("basictiles.png"));
         enemyLoader = new TextureLoader(Gdx.files.internal("mobs.png"));
+        lifeLoader = new TextureLoader(Gdx.files.internal("objects.png"));
+        powerLoader = new TextureLoader(Gdx.files.internal("basictiles.png"));
         gameMusic = Gdx.audio.newMusic(Gdx.files.internal("InGame.mp3"));
         bottomLeftEnemyAnimation = loadBottomLeftEnemyAnimation();
         calculateMazeDimensions();
-        // loadGameObjects(mazeData); // Remove this redundant call
+        shapeRenderer = new ShapeRenderer();
     }
+    private void initializeHUD() {
+        hudStage = new Stage(new ScreenViewport());
+        loadHudTextures();
+        heartImages = new ArrayList<>();
+    }
+
+
     public GameScreen(MazeRunnerGame game, int[][] mazeData) {
         this.game = game;
         this.mazeData = mazeData;
+        this.lives=3;
         initialize(); // This will now properly initialize enemySpawnPoints before loadGameObjects is called
         initialZoom = calculateInitialZoom();
         calculateCameraConstraints();
         loadGameObjects(mazeData); // This is where game objects are actually loaded
+        initializeHUD();
     }
+
 
     private float calculateInitialZoom() {
         // Calculate the initial zoom level based on maze and window dimensions
@@ -84,14 +116,18 @@ public class GameScreen implements Screen {
         maxCameraY = mazeHeight - cameraHeight + paddingY;
 
     }
+
     private void loadGameObjects(int[][] mazeData) {
         TextureRegion wallRegion = textureLoader.getTextureRegion(0, 0, 16, 16);
-        TextureRegion keyRegion = textureLoader.getTextureRegion(6*16, 3*16, 16, 6);
-        TextureRegion entryRegion = textureLoader.getTextureRegion(2*16, 6*16, 16, 16);
-        TextureRegion exitRegion = textureLoader.getTextureRegion(0, 6*16, 16, 16);
-        TextureRegion trapRegion = textureLoader.getTextureRegion(2*16, 9*16, 16, 16);
-        TextureRegion enemyRegion = enemyLoader.getTextureRegion(4*16, 5*16, 16, 16);
-        Animation<TextureRegion> bottomLeftEnemyAnimation= loadBottomLeftEnemyAnimation();
+        TextureRegion keyRegion = textureLoader.getTextureRegion(6 * 16, 3 * 16, 16, 6);
+        TextureRegion entryRegion = textureLoader.getTextureRegion(2 * 16, 6 * 16, 16, 16);
+        TextureRegion exitRegion = textureLoader.getTextureRegion(0, 6 * 16, 16, 16);
+        TextureRegion trapRegion = textureLoader.getTextureRegion(4* 16, 7 * 16, 16, 16);
+        TextureRegion enemyRegion = enemyLoader.getTextureRegion(4 * 16, 5 * 16, 16, 16);
+        TextureRegion lifeRegion = lifeLoader.getTextureRegion(4* 16, 0* 16, 16, 16);
+        TextureRegion powerRegion = powerLoader.getTextureRegion(6* 16, 9* 16, 16, 16);
+
+        Animation<TextureRegion> bottomLeftEnemyAnimation = loadBottomLeftEnemyAnimation();
 
 
         for (int x = 0; x < mazeData.length; x++) {
@@ -102,9 +138,8 @@ public class GameScreen implements Screen {
                         break;
                     case 1:
                         gameObjects.add(new Entry(entryRegion, x, y));
-                        spawnX = x;
+                        spawnX = x+1;
                         spawnY = y;
-
                         break;
                     case 2:
                         gameObjects.add(new Exit(exitRegion, x, y));
@@ -113,13 +148,16 @@ public class GameScreen implements Screen {
                         gameObjects.add(new Trap(trapRegion, x, y));
                         break;
                     case 4:
-                        Gdx.app.log("Spawn", "Enemy spawn at: " + x + ", " + y);
                         enemySpawnPoints.add(new Vector2(x, y));
-
-
                         break;
                     case 5:
                         gameObjects.add(new Key(keyRegion, x, y));
+                        break;
+                    case 6:
+                        gameObjects.add(new Life(lifeRegion, x, y));
+                        break;
+                    case 7:
+                        gameObjects.add(new Power(powerRegion, x, y));
                         break;
                     default:
                         break;
@@ -155,58 +193,101 @@ public class GameScreen implements Screen {
 
         return new Animation<>(0.1f, bottomLeftEnemyFrames);  // 0.1f is the frame duration
     }
+
     private void initializeEnemies() {
         for (Vector2 spawnPoint : enemySpawnPoints) {
-            gameObjects.add(new Enemy(this,bottomLeftEnemyAnimation, spawnPoint.x, spawnPoint.y));
+            gameObjects.add(new Enemy(this, bottomLeftEnemyAnimation, spawnPoint.x, spawnPoint.y));
         }
     }
-
 
 
     private void initializeCharacter() {
         character = new Character(game.getCharacterUpAnimation(), game.getCharacterDownAnimation(),
                 game.getCharacterLeftAnimation(), game.getCharacterRightAnimation(),
-                spawnX*16  , spawnY*16 );
+                spawnX * 16, spawnY * 16);
         character.setGameScreen(this);
+    }
+    private void renderHUD(SpriteBatch batch) {
+        float hudX = 0; // Start at X coordinate 0
+        float hudY = mazeWidth+33; // Start at Y coordinate 100 on the map
+        int remainingLives =lives;
+        for (int i = 0; i < 3; i++) { // Assuming the maximum number of lives is 3
+            if (remainingLives > 0) {
+                batch.draw(heartTexture, hudX, hudY, 16, 16);
+                remainingLives--;
+            }
+            hudX += 20; // Move right for the next heart
+        }
+
+        // Draw key icon
+        if (character.isHasKey()) {
+            batch.draw(keyIconTexture, 0, hudY - 20, 16, 16);
+            hudY -= 20;
+        }
+
+        // Draw power-up icon
+        if (character.isPowerUpActive()) {
+            batch.draw(powerUpIconTexture, 0, hudY, 20, 20);
+        }
+    }
+    public Collidable checkCollision(float potentialX, float potentialY, GameObject object) {
+        Rectangle potentialBounds = new Rectangle(potentialX, potentialY, object.getBoundingBox().width, object.getBoundingBox().height);
+        for (GameObject gameObject : gameObjects) {
+            // Skip the collision check for the object itself
+            if (gameObject == object) {
+                continue;
+            }
+            if (gameObject instanceof Collidable) {
+                Collidable collidable = (Collidable) gameObject;
+
+                // Check for an overlap between the two objects
+                if (potentialBounds.overlaps(collidable.getBoundingBox())) {
+                    return collidable;
+                }
+            }
+        }
+        return null;  // No collision detected
     }
     @Override
 
-        // Clear the screen, update the game state, etc.
-        public void render ( float delta){
-            // Clear the screen
-            ScreenUtils.clear(0, 0, 0, 1);
+    // Clear the screen, update the game state, etc.
+    public void render(float delta) {
+        // Clear the screen
+        ScreenUtils.clear(0, 0, 0, 1);
 
-            // Handle user input
-            handleInput(delta);
+        // Handle user input
+        handleInput(delta);
 
-            // Update the character and camera position
-            if (character != null) {
-                character.move(delta); // Update character movement
-                character.update(delta); // Update character state
-                updateCameraPosition(delta); // Update the camera to follow the character
-            }
+        // Update the character and camera position
+        if (character != null) {
+            character.move(delta); // Update character movement
+            character.update(delta); // Update character state
+            updateCameraPosition(delta); // Update the camera to follow the character
+        }
 
-            // Update the camera and set the projection matrix
-            camera.update();
-            batch.setProjectionMatrix(camera.combined);
-
-            // Draw all game objects
-            batch.begin();
-            for (GameObject gameObject : gameObjects) {
-                gameObject.draw(batch);
-            }
+        // Update the camera and set the projection matrix
+        camera.update();
+        batch.setProjectionMatrix(camera.combined);
+        // Draw all game objects
+        batch.begin();
+        for (GameObject gameObject : gameObjects) {
+            gameObject.draw(batch);
+        }
         for (GameObject gameObject : gameObjects) {
             if (gameObject instanceof Enemy) {
                 ((Enemy) gameObject).update(delta);
             }
             gameObject.draw(batch);
         }
-            // Draw the character
-            if (character != null) {
-                character.draw(batch);
-            }
-            batch.end();
+        // Draw the character
+        if (character != null) {
+            character.draw(batch);
         }
+        renderHUD(batch);
+        batch.end();
+        hudStage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f));
+        hudStage.draw();
+    }
     public Character getPlayer() {
         return character;
     }
@@ -222,13 +303,15 @@ public class GameScreen implements Screen {
         }
 
         // Adjust zoom level if necessary
-        camera.zoom = 0.4f; // Adjust these values as needed
+        camera.zoom = 0.8f; // Adjust these values as needed
         camera.update();
     }
+
     private void calculateMazeDimensions() {
         mazeWidth = mazeData.length * 16; // Assuming each cell is 16 pixels wide
         mazeHeight = mazeData[0].length * 16; // Assuming each cell is 16 pixels high
     }
+
     public void playGameMusic() {
         if (gameMusic != null) {
             gameMusic.setVolume(game.getSoundSettings().getGameMusicVolume());
@@ -236,17 +319,20 @@ public class GameScreen implements Screen {
             gameMusic.play();
         }
     }
+
     private void handleInput(float delta) {
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             game.setPaused(true);
             game.goToMenu();
         }
     }
+
     @Override
     public void resize(int width, int height) {
-        camera.setToOrtho(false,width,height);
+        camera.setToOrtho(false, width, height);
         camera.update();
         calculateCameraConstraints();
+        hudStage.getViewport().update(width, height, true);
     }
 
     @Override
@@ -280,7 +366,11 @@ public class GameScreen implements Screen {
     @Override
     public void dispose() {
         textureLoader.dispose();
-      batch.dispose();
+        batch.dispose();
+        heartTexture.dispose();
+        keyIconTexture.dispose();
+        powerUpIconTexture.dispose();
+        hudStage.dispose();
     }
 
     public float getSpawnX() {
@@ -299,15 +389,20 @@ public class GameScreen implements Screen {
         this.spawnY = spawnY;
     }
 
-    public Collidable checkCollision(float potentialX, float potentialY,GameObject object ) {
-        Rectangle potentialBounds = new Rectangle(potentialX, potentialY, object.getBoundingBox().width, object.getBoundingBox().height);
-        for (GameObject gameObject : gameObjects) {
-            if (gameObject instanceof Collidable && gameObject !=object) {
-                if (potentialBounds.overlaps(gameObject.getBoundingBox())) {
-                    return (Collidable) gameObject;
-                }
-            }
-        }
-        return null; // No collision detected
+    public int getMazeWidth() {
+        return mazeWidth;
+    }
+
+    public int getMazeHeight() {
+        return mazeHeight;
+    }
+
+    public void setLives(int lives) {
+        this.lives = lives;
+    }
+
+    public int getLives() {
+        return lives;
     }
 }
+

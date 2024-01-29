@@ -5,7 +5,8 @@ package de.tum.cit.ase.maze;
         WALL,
         ENEMY,
         TRAP,
-        LIVES,
+        LIFE,
+        POWER,
         KEY,
         ENTRY,
         EXIT

@@ -23,7 +23,8 @@ public class Character extends GameObject implements Collidable {
     private Animation<TextureRegion> leftAnimation;
     private Animation<TextureRegion> rightAnimation;
     private GameScreen gameScreen;
-
+    private boolean hasKey = false;
+    private boolean powerUpActive = false;
     private boolean isInvincible;
     private float invincibilityTime;
     private float knockbackSpeed;
@@ -31,8 +32,8 @@ public class Character extends GameObject implements Collidable {
     private float knockbackRemaining;
     private Vector2 knockbackDirection;
     private float x,previousX ,potentialX;
-    private int health;
-    private boolean isInKnockback;
+    private int lives;
+    private boolean isInKnockback,handlingKnockback;
     private float y,previousY,potentialY;
     public void setGameScreen(GameScreen gameScreen) {
         this.gameScreen = gameScreen;
@@ -41,7 +42,7 @@ public class Character extends GameObject implements Collidable {
     public Character(Animation<TextureRegion> up, Animation<TextureRegion> down,
                      Animation<TextureRegion> left, Animation<TextureRegion> right,
                      float x, float y) {
-        super(null, x, y, 12.5f,14);
+        super(null, x, y, 12.5f,12);
         this.x=x;
         this.y=y;
         this.upAnimation = up;
@@ -49,12 +50,12 @@ public class Character extends GameObject implements Collidable {
         this.leftAnimation = left;
         this.rightAnimation = right;
         this.currentAnimation = down; // Default animation
-        this.boundingBox = new Rectangle(x, y, 12.5f, 14);
+        this.boundingBox = new Rectangle(x, y, 12.5f, 12);
         this.isInvincible = false;
-        this.health=3;
-        this.invincibilityTime = 1.7f;
-        this.knockbackSpeed = 10f; // adjust as needed
-        this.knockbackTime = 1f; // half a second knockback
+        this.lives=3;
+        this.invincibilityTime = 3f;
+        this.knockbackSpeed = 5f;
+        this.knockbackTime = 1f;
         this.knockbackDirection = new Vector2();
     }
 
@@ -62,67 +63,124 @@ public class Character extends GameObject implements Collidable {
     public void move(float delta) {
         previousX = x;
         previousY = y;
+        float potentialX = x;
+        float potentialY = y;
         float distance = speed * delta;
         if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            x -= distance;
-            currentAnimation = leftAnimation;
+            potentialX -= distance;
         }
         if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-          x += distance;
-            currentAnimation = rightAnimation;
+            potentialX += distance;
         }
         if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
-            y += distance;
-            currentAnimation = upAnimation;
+            potentialY += distance;
         }
         if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
-           y -= distance;
-            currentAnimation = downAnimation;
-        }
-        Collidable collisionObject = gameScreen.checkCollision(x, y, this);
-        if (collisionObject != null) {
-            // Call the handleCollision method when a collision is detected
-            handleCollision(collisionObject);
-        } else {
-            // If no collision, update the position
-            setPosition(x, y);
+            potentialY -= distance;
         }
 
+        // Check for collisions at the potential new position
+        Collidable collisionObject = gameScreen.checkCollision(potentialX, potentialY, this);
+        if (collisionObject != null) {
+            // Handle the collision
+            handleCollision(collisionObject);
+        } else {
+            // Update the position if there is no collision
+            setPosition(potentialX, potentialY);
+        }
+        updatePositionAndCheckCollisions(delta);
+
+        // Update animation state
+        updateAnimationState();
         isMoving = x!=previousX|| y !=previousY;
+    }
+
+    private void updatePositionAndCheckCollisions(float delta) {
+        Collidable collisionObject = gameScreen.checkCollision(x, y, this);
+        if (collisionObject != null) {
+            handleCollision(collisionObject);
+        } else {
+            setPosition(x, y); // Make sure this also updates the bounding box
+        }
+    }
+
+    private void updateAnimationState() {
+        if (x < previousX) {
+            currentAnimation = leftAnimation;
+        } else if (x > previousX) {
+            currentAnimation = rightAnimation;
+        } else if (y < previousY) {
+            currentAnimation = downAnimation;
+        } else if (y > previousY) {
+            currentAnimation = upAnimation;
+        }
+        // You might need to add an else clause to handle the case where the character is not moving
     }
     @Override
     public void handleCollision(Collidable other) {
         ObjectType type = other.getObjectType();
-
+        if (isInvincible && (type == ObjectType.ENEMY || type == ObjectType.TRAP)) {
+            return;
+        }
         switch (type) {
             case WALL:
                 setPosition(previousX, previousY);
                 break;
             case ENEMY:
-                if (!isInvincible) {
-                    loseHealth();
+                gameScreen.setLives(getLives()-1);
                     Vector2 enemyPosition = new Vector2(((Enemy) other).getX(),((Enemy) other).getX());
                     applyKnockback(enemyPosition);
                     becomeInvincible();
-                }
-                // Handle collision with enemy (e.g., decrease life, change color)
                 break;
-            // Add more cases for other object types as needed
-        }
-    }
+            case ENTRY:
+                setPosition(previousX,previousY);
+                break;
+            case KEY:
+                hasKey=true;
+                setPosition(x,y);
+                break;
+            case EXIT:
+                break;
+            case POWER:
+                powerUpActive=true;
+                setPosition(x,y);
+                break;
+            case TRAP:
+                gameScreen.setLives(getLives()-1);
+                becomeInvincible();
+                break;
+            case LIFE:
+                gameScreen.setLives(getLives()+1);
+                setPosition(x,y);
+                break;
 
-    private void loseHealth() {
-        health--;
-        System.out.println("life lost");
-    }
-    private void gainHealth(){
-        health++;
+
+
+        }
     }
     private void applyKnockback(Vector2 knockbackSource) {
         isInKnockback=true;
-        knockbackTime =0.7f;
+        knockbackTime =1f;
         knockbackDirection.set(this.x - knockbackSource.x, this.y - knockbackSource.y).nor();
+        handlingKnockback = true; // Set the flag
+        attemptKnockbackPosition();
+        handlingKnockback = false;
+    }
+    private void attemptKnockbackPosition() {
+        float potentialX = x + knockbackDirection.x * knockbackSpeed;
+        float potentialY = y + knockbackDirection.y * knockbackSpeed;
+        boolean canMoveX = gameScreen.checkCollision(potentialX, this.y, this) == null;
+        boolean canMoveY = gameScreen.checkCollision(this.x, potentialY, this) == null;
 
+        // Move in the free direction(s)
+        if (canMoveX) {
+            this.x = potentialX;
+        }
+        if (canMoveY) {
+            this.y = potentialY;
+        }
+        // Update the character's position and bounding box
+        setPosition(this.x, this.y);
     }
     private void becomeInvincible() {
         isInvincible = true;
@@ -132,7 +190,7 @@ public class Character extends GameObject implements Collidable {
     private void setPosition(float x, float y) {
         this.x = x;
         this.y = y;
-        boundingBox.setPosition(x, y);
+        this.boundingBox.setPosition(this.x, this.y);
     }
 
     public void update(float delta) {
@@ -146,8 +204,7 @@ public class Character extends GameObject implements Collidable {
         // Update knockback movement
         if (isInKnockback) {
             knockbackTime -= delta;
-            x += knockbackDirection.x * knockbackSpeed * delta;
-            y += knockbackDirection.y * knockbackSpeed * delta;
+            attemptKnockbackPosition();
             if (knockbackTime <= 0) {
                 isInKnockback = false; // End knockback effect
             }
@@ -165,8 +222,8 @@ public class Character extends GameObject implements Collidable {
         }
         TextureRegion currentFrame = currentAnimation.getKeyFrame(stateTime, true);
 
-        float characterWidth = 11; // Increase for larger character
-        float characterHeight = 17; // Increase for larger character
+        float characterWidth = 13; // Increase for larger character
+        float characterHeight = 18; // Increase for larger character
 
         batch.draw(currentFrame, x, y, characterWidth, characterHeight);
         batch.setColor(Color.WHITE);
@@ -190,5 +247,29 @@ public class Character extends GameObject implements Collidable {
 
     public void setY(float y) {
         this.y = y;
+    }
+
+    public boolean isInvincible() {
+        return isInvincible;
+    }
+
+    public void setInvincible(boolean invincible) {
+        isInvincible = invincible;
+    }
+
+    public int getLives() {
+        return lives;
+    }
+
+    public void setLives(int lives) {
+        this.lives = lives;
+    }
+
+    public boolean isHasKey() {
+        return hasKey;
+    }
+
+    public boolean isPowerUpActive() {
+        return powerUpActive;
     }
 }

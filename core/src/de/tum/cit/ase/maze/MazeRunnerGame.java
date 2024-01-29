@@ -181,4 +181,7 @@ public class MazeRunnerGame extends Game {
     public SoundSettings getSoundSettings() {
         return soundSettings;
     }
+    public void render() {
+        super.render(); // This is important for delegating the render call
+    }
 }
