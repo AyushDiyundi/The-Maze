@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
@@ -256,14 +257,13 @@ public class GameScreen implements Screen {
             }
             gameObject.draw(batch);
         }
-
-
         // Draw the character
         if (character != null) {
             character.draw(batch);
         }
-
+      //renderCollisionBoxes();
         batch.end();
+        renderCollisionBoxes();
         hudStage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f));
         hudStage.draw();
 
@@ -283,7 +283,7 @@ public class GameScreen implements Screen {
         }
 
         // Adjust zoom level if necessary
-        camera.zoom = 0.2f; // Adjust these values as needed
+        camera.zoom = 0.5f; // Adjust these values as needed
         camera.update();
     }
 
@@ -305,6 +305,20 @@ public class GameScreen implements Screen {
             game.setPaused(true);
             game.goToMenu();
         }
+    }
+    public void renderCollisionBoxes() {
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line); // Start drawing lines
+
+        for (GameObject gameObject : gameObjects) {
+            if (gameObject instanceof Collidable) {
+                Rectangle boundingBox = ((Collidable) gameObject).getBoundingBox();
+                shapeRenderer.setColor(Color.RED); // Set color for the bounding box
+                shapeRenderer.rect(boundingBox.x, boundingBox.y, boundingBox.width, boundingBox.height);
+            }
+        }
+
+        shapeRenderer.end(); // End drawing
     }
 
     @Override

@@ -5,146 +5,123 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import java.util.Random;
-
-
 public class Enemy extends GameObject implements Collidable {
     private float stateTime = 0f;
-    private final float followThreshold = 2 * 16; // Follow player if within this distance
-    private Direction currentDirection = Direction.RIGHT;
-    private Animation<TextureRegion> animation;
-    private GameScreen gameScreen;
-    private float speedReductionTimer;
+    private final float followThreshold;
+    private Direction currentDirection;
+    private Direction previousDirection;
+    private final Animation<TextureRegion> animation;
+    private final GameScreen gameScreen;
     private float speed;
-    private float normalSpeed = 10.0f;
-    private float x;
-    private float y;
-    private boolean isPatrolling;
-    private Vector2 targetPosition, lastPatrolPosition;
-    private float patrolTime;
-    private float currentPatrolTime;
-    private Random random;
-    private boolean canChangeDirection = true;
-    private float changeDirectionCooldown = 2.0f;
-    private float timeSinceLastDirectionChange = 0.0f;
-    boolean isFollowingPlayer;
-
-    @Override
-    public ObjectType getObjectType() {
-        return ObjectType.ENEMY;
-    }
+    private final Vector2 targetPosition;
+    private final Random random;
+    private final float maxDuration;
+    private final float normalSpeed;
+    private float x, y;
+    private float timer;
+    private float speedReductionTimer;
+    private boolean isFollowingPlayer;
+    private boolean debugMode = false; // Set to true for debugging
 
     private enum Direction {
         UP, DOWN, LEFT, RIGHT
     }
 
     public Enemy(GameScreen gameScreen, Animation<TextureRegion> animation, float x, float y) {
-        super(null, x * 16, y * 16, 12,14);
+        super(null, x * 16, y * 16, 12, 14);
         this.gameScreen = gameScreen;
         this.animation = animation;
-        this.speedReductionTimer=0;
-        this.currentDirection = Direction.RIGHT; // Set an initial direction
-        this.x = x * 16; // Store the pixel-based position
+        this.x = x * 16;
         this.y = y * 16;
+        this.normalSpeed = 20f;
+        this.random = new Random();
+        //this.followThreshold = random.nextFloat() * (5 -2 ) +2;
+        this.followThreshold =4;
         this.targetPosition = new Vector2(x, y);
-        random = new Random();
-        this.isPatrolling=true;
-        patrolTime = 5f; // Time in seconds to change direction
-        currentPatrolTime =0;
-        changeDirection();
+        this.maxDuration = random.nextFloat(3f, 6f);
+        this.speed = normalSpeed;
+        this.speedReductionTimer = 0;
+        this.isFollowingPlayer = false;
+        this.currentDirection = Direction.RIGHT;
     }
-
-
     public void update(float delta) {
         stateTime += delta;
-        speedReduction(delta);
-        float distanceToPlayer = Vector2.dst(x, y, gameScreen.getPlayer().getX(), gameScreen.getPlayer().getY());
-        boolean isFollowingPlayer = distanceToPlayer <= followThreshold;
-        handleCooldown(delta);
-        if (isFollowingPlayer) {
-            handlePlayerFollowing();
-        } else {
-            handlePatrolling(delta);
-        }
-        moveToTarget(delta,targetPosition);
-        handleCollisions(delta, isFollowingPlayer);
-
-    }
-    private void handleCooldown(float delta) {
-        if (!canChangeDirection) {
-            timeSinceLastDirectionChange += delta;
-            if (timeSinceLastDirectionChange >= changeDirectionCooldown) {
-                canChangeDirection = true;
-                timeSinceLastDirectionChange = 0.0f;
-            }
-        }
-    }
-    private void handlePlayerFollowing() {
-        lastPatrolPosition = new Vector2(x, y);
-        speed = normalSpeed + 10;
-        isPatrolling = false;
-        targetPosition.set(gameScreen.getPlayer().getX(), gameScreen.getPlayer().getY());
-    }
-
-    private void handlePatrolling(float delta) {
-        if (!isPatrolling && lastPatrolPosition != null) {
-            targetPosition.set(lastPatrolPosition);
-            isPatrolling = true;
-        } else {
-            patrol(delta);
-        }
-    }
-    private void changeDirectionAvoidingObstacles() {
-        if (!canChangeDirection || !isPatrolling) return;
-
-        Direction newDirection;
-        do {
-            newDirection = Direction.values()[random.nextInt(Direction.values().length)];
-        } while (newDirection == currentDirection || !isDirectionValid(newDirection));
-
-        currentDirection = newDirection;
-        canChangeDirection = false;
-    }
-
-private boolean isDirectionValid(Direction direction) {
-    Vector2 moveDirection = getDirectionVector(direction);
-    float potentialX = x + moveDirection.x;
-    float potentialY = y + moveDirection.y;
-    return gameScreen.checkCollision(potentialX, potentialY, this) == null &&
-            potentialX >= 0 && potentialX < gameScreen.getMazeWidth() &&
-            potentialY >= 0 && potentialY < gameScreen.getMazeHeight();
-}
-    private void speedReduction(float delta) {
         if (speedReductionTimer > 0) {
             speedReductionTimer -= delta;
-            speed =normalSpeed-10; // Reduced speed
+            speed = normalSpeed - 10; // Reduced speed, adjust as necessary
         } else {
             speed = normalSpeed; // Reset to normal speed
         }
-    }
-    private void moveToTarget(float delta, Vector2 target) {
-        Vector2 moveDirection = new Vector2(target.x - x, target.y - y).nor();
-        float nextX = x + moveDirection.x * speed * delta;
-        float nextY = y + moveDirection.y * speed * delta;
-        if (isPatrolling || gameScreen.checkCollision(nextX, nextY, this) == null) {
-            setPosition(nextX, nextY);
+        float distanceToPlayer = Vector2.dst(x, y, gameScreen.getPlayer().getX(), gameScreen.getPlayer().getY());
+        boolean isFollowingPlayer = distanceToPlayer <= followThreshold;
+
+        if (isFollowingPlayer) {
+            followPlayer(delta);
         } else {
-            changeDirection();
+            randomMove(delta);
         }
+    }
+
+    private void followPlayer(float delta) {
+        targetPosition.set(gameScreen.getPlayer().getX(), gameScreen.getPlayer().getY());
+        if (!isFollowingPlayer) {
+            speed += 10;
+            isFollowingPlayer = true;
+        }
+        moveToTarget(delta, targetPosition);
+    }
+
+    private void randomMove(float delta) {
+        if (timer >= maxDuration) {
+            changeDirectionAvoidingObstacles(); // Change direction with collision checking
+            timer = 0;
+        } else {
+            timer += delta;
+            Vector2 moveDirection = getDirectionVector(currentDirection);
+            float potentialX = x + moveDirection.x * speed * delta;
+            float potentialY = y + moveDirection.y * speed * delta;
+
+            // Check if the new position is valid (no collision and within maze bounds)
+            if (isPositionValid(potentialX, potentialY)) {
+                setPosition(potentialX, potentialY); // Move to the new position if valid
+            } else {
+                changeDirectionAvoidingObstacles(); // Change direction if collision detected or out of bounds
+            }
+        }
+    }
+
+    private void changeDirectionAvoidingObstacles() {
+        Direction newDirection=null;
+        boolean validDirectionFound = false;
+
+        for (int i = 0; i < Direction.values().length; i++) {
+            newDirection = Direction.values()[random.nextInt(Direction.values().length)];
+
+            if (!newDirection.equals(previousDirection) && isDirectionValid(newDirection)) {
+                validDirectionFound = true;
+                break;
+            }
+        }
+
+        if (validDirectionFound) {
+            previousDirection = currentDirection; // Update previous direction
+            currentDirection = newDirection;      // Change to the new valid direction
+        } else {
+            // If no valid direction is found, revert to the previous direction
+            currentDirection = previousDirection;
+        }
+    }
+
+    private boolean isDirectionValid(Direction direction) {
+        Vector2 moveDirection = getDirectionVector(direction);
+        float potentialX = x + moveDirection.x;
+        float potentialY = y + moveDirection.y;
+        return isPositionValid(potentialX, potentialY);
     }
     private void setPosition(float x, float y) {
         this.x = x;
         this.y = y;
-        // Ensure that the bounding box is updated with the new position
-        this.getBoundingBox().setPosition(x, y);
-    }
-    private void patrol(float delta) {
-        currentPatrolTime += delta;
-        if (currentPatrolTime >= patrolTime) {
-            currentPatrolTime = 0;
-            changeDirection();
-        }
-        Vector2 moveDirection = getDirectionVector(currentDirection);
-        moveToTarget(delta, new Vector2(x + moveDirection.x, y + moveDirection.y));
+        // Update the bounding box or any other relevant position-dependent properties
     }
     private Vector2 getDirectionVector(Direction direction) {
         switch (direction) {
@@ -157,79 +134,82 @@ private boolean isDirectionValid(Direction direction) {
             case RIGHT:
                 return new Vector2(1, 0); // Moving right increases the X value
             default:
-                return new Vector2(0, 0); // Stationary if direction is undefined
+                return new Vector2(0, 0); // Stationary or default case
         }
     }
+    private void moveToTarget(float delta, Vector2 target) {
+        Vector2 moveDirection = new Vector2(target.x - x, target.y - y).nor();
+        float nextX, nextY;
 
+        for (float step = 0; step < speed * delta; step += 1.0f) { // Smaller steps for collision checking
+            nextX = x + moveDirection.x * step;
+            nextY = y + moveDirection.y * step;
+
+            if (!isPositionValid(nextX, nextY)) {
+                slideAlongObstacle(moveDirection); // Slide along obstacle if collision detected
+                return; // Stop moving after handling collision
+            }
+        }
+
+        // Apply full movement if no collision detected at increments
+        x += moveDirection.x * speed * delta;
+        y += moveDirection.y * speed * delta;
+        this.getBoundingBox().setPosition(x, y);
+    }
     private void handleCollisions(float delta, boolean isFollowingPlayer) {
         Collidable collidableObject = gameScreen.checkCollision(x, y, this);
         if (collidableObject != null) {
             if (isFollowingPlayer && collidableObject.getObjectType() != ObjectType.CHARACTER) {
-                slideAlongObstacle(collidableObject);
+                Vector2 moveDirection = getDirectionVector(currentDirection);
+                slideAlongObstacle(moveDirection);
             } else {
                 handleCollision(collidableObject);
             }
         }
     }
-    @Override
-    public void handleCollision(Collidable other) {
-        ObjectType type = other.getObjectType();
+    private void slideAlongObstacle(Vector2 moveDirection) {
+        // Determine slide direction based on moveDirection
+        // For example, if moving right, check up and down for sliding
 
-        switch (type) {
-            case WALL,TRAP:
-                slideAlongObstacle(other);
-                break;
-            case ENEMY,ENTRY,EXIT:
-                changeDirection();
-                break;
-            case CHARACTER:
-                speedReductionTimer = 4.0f;
-                if (((Character) other).isInvincible()) {
-                    isFollowingPlayer=false;
-                    changeDirection();
-                }
-                break;
-
+        // Example for sliding vertically:
+        if (moveDirection.x != 0) {
+            float slideY = moveDirection.x > 0 ? findSlidePositionY(x + 1, y) : findSlidePositionY(x - 1, y);
+            if (slideY != y) {
+                y = slideY;
+                setPosition(x, y);
+            }
         }
+        // Similarly, handle horizontal sliding when moving vertically
     }
-    private void slideAlongObstacle(Collidable obstacle) {
-        // Check if sliding is possible on either axis
-        boolean canSlideX = gameScreen.checkCollision(x + 1, y, this) == null ||
-                gameScreen.checkCollision(x - 1, y, this) == null;
-        boolean canSlideY = gameScreen.checkCollision(x, y + 1, this) == null ||
-                gameScreen.checkCollision(x, y - 1, this) == null;
 
-        if (canSlideX) {
-            x += gameScreen.checkCollision(x + 1, y, this) == null ? 1 : -1;
-        } else if (canSlideY) {
-            y += gameScreen.checkCollision(x, y + 1, this) == null ? 1 : -1;
-        } else {
-            changeDirection(); // If sliding is not possible in either direction
-        }
-    }
-    private void changeDirection() {
-        Direction newDirection = currentDirection;
-        boolean validDirectionFound = false;
+    private float findSlidePositionY(float x, float startY) {
+        float slideY = startY;
+        float step = 1.0f; // Incremental step for checking positions
 
-        while (!validDirectionFound) {
-            // Randomly choose a new direction
-            newDirection = Direction.values()[random.nextInt(Direction.values().length)];
-
-            // Calculate potential new position
-            Vector2 moveDirection = getDirectionVector(newDirection);
-            float potentialX = x + moveDirection.x;
-            float potentialY = y + moveDirection.y;
-
-            // Check if the new position is within the maze bounds
-            if (!(potentialX < 0 || potentialX >= gameScreen.getMazeWidth() || potentialY < 0 || potentialY >= gameScreen.getMazeHeight())) {
-                validDirectionFound = true;
+        // Check upward for a valid Y position
+        while (!isPositionValid(x, slideY)) {
+            slideY += step;
+            if (slideY >= gameScreen.getMazeHeight()) {
+                // Reached the top boundary, return the original startY
+                return startY;
             }
         }
 
-        currentDirection = newDirection;
+        // Reset slideY to the original startY for downward checking
+        slideY = startY;
+
+        // Check downward for a valid Y position
+        while (!isPositionValid(x, slideY)) {
+            slideY -= step;
+            if (slideY < 0) {
+                // Reached the bottom boundary, return the original startY
+                return startY;
+            }
+        }
+
+        // Return the nearest valid Y position found
+        return slideY;
     }
-
-
     @Override
     public void draw(SpriteBatch batch) {
         TextureRegion currentFrame = animation.getKeyFrame(stateTime, true);
@@ -251,6 +231,62 @@ private boolean isDirectionValid(Direction direction) {
 
     public void setY(float y) {
         this.y = y;
+    }
+
+    @Override
+    public void handleCollision(Collidable other) {
+        ObjectType type = other.getObjectType();
+
+        switch (type) {
+            case WALL,TRAP,ENEMY,ENTRY,EXIT:
+                changeDirection();
+                break;
+            case CHARACTER:
+                speedReductionTimer = 4.0f;
+                if (((Character) other).isInvincible()) {
+                    isFollowingPlayer=false;
+                    currentDirection=previousDirection;
+                }
+                break;
+
+        }
+
+    }
+
+    private void changeDirection() {
+        if (debugMode) {
+            System.out.println("change direction called");
+        }
+        Direction newDirection = currentDirection;
+        boolean validDirectionFound = false;
+
+        for (int i = 0; i < Direction.values().length; i++) {
+            newDirection = Direction.values()[random.nextInt(Direction.values().length)];
+            Vector2 moveDirection = getDirectionVector(newDirection);
+            if (isPositionValid(x + moveDirection.x, y + moveDirection.y)) {
+                validDirectionFound = true;
+                break;
+            }
+        }
+
+        if (validDirectionFound) {
+            currentDirection = newDirection;
+        } else {
+            currentDirection = previousDirection;
+        }
+
+        if (debugMode) {
+            System.out.println("New direction: " + currentDirection);
+        }
+    }
+    private boolean isPositionValid(float x, float y) {
+        return x >= 0 && x < gameScreen.getMazeWidth() &&
+                y >= 0 && y < gameScreen.getMazeHeight() &&
+                gameScreen.checkCollision(x, y, this) == null;
+    }
+    @Override
+    public ObjectType getObjectType() {
+        return ObjectType.ENEMY;
     }
 }
 
