@@ -132,17 +132,26 @@ public class GameScreen implements Screen {
 
     private Animation<TextureRegion> loadBottomLeftEnemyAnimation() {
         Texture enemySheet = new Texture(Gdx.files.internal("mobs.png"));
-        int frameCols = 4;  // 12 frames of animation
-        int frameRows = 5;   // 8 types of enemies
+        int frameCols = 3;  // Number of columns in the animation matrix for each enemy
+        int frameRows = 4;  // Number of rows in the animation matrix for each enemy
+        int enemyType = 1;  // Index of the enemy type you want to extract (0 for the first type)
 
         TextureRegion[][] tmpFrames = TextureRegion.split(enemySheet, 16, 16);
-        TextureRegion[] bottomLeftEnemyFrames = new TextureRegion[frameCols];
+        TextureRegion[] bottomLeftEnemyFrames = new TextureRegion[frameCols * frameRows];
 
-        // Bottom left enemy is in the last row of the sprite sheet
-        int bottomLeftRow = frameRows - 1;
-        for (int col = 0; col < frameCols; col++) {
-            bottomLeftEnemyFrames[col] = tmpFrames[bottomLeftRow][col];
+        // Calculate the starting row and column for the selected enemy type
+        int startRow = enemyType * frameRows;
+        int startCol = 0;  // Assuming the first enemy type always starts at column 0
+
+        // Extract frames of the bottom-left enemy from the sprite sheet
+        int frameIndex = 0;
+        for (int row = startRow; row < startRow + frameRows; row++) {
+            for (int col = startCol; col < startCol + frameCols; col++) {
+                bottomLeftEnemyFrames[frameIndex] = tmpFrames[row][col];
+                frameIndex++;
+            }
         }
+
 
         return new Animation<>(0.1f, bottomLeftEnemyFrames);  // 0.1f is the frame duration
     }
