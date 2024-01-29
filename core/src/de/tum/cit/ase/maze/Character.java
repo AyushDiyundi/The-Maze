@@ -2,16 +2,18 @@ package de.tum.cit.ase.maze;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 
 
 public class Character extends GameObject implements Collidable {
     private Animation<TextureRegion> currentAnimation;
     private float stateTime = 0f;
-    private float speed = 40f;
+    private float speed = 50f;
     private boolean isMoving;
     private Rectangle boundingBox;
 
@@ -21,7 +23,16 @@ public class Character extends GameObject implements Collidable {
     private Animation<TextureRegion> leftAnimation;
     private Animation<TextureRegion> rightAnimation;
     private GameScreen gameScreen;
+
+    private boolean isInvincible;
+    private float invincibilityTime;
+    private float knockbackSpeed;
+    private float knockbackTime;
+    private float knockbackRemaining;
+    private Vector2 knockbackDirection;
     private float x,previousX ,potentialX;
+    private int health;
+    private boolean isInKnockback;
     private float y,previousY,potentialY;
     public void setGameScreen(GameScreen gameScreen) {
         this.gameScreen = gameScreen;
@@ -39,6 +50,12 @@ public class Character extends GameObject implements Collidable {
         this.rightAnimation = right;
         this.currentAnimation = down; // Default animation
         this.boundingBox = new Rectangle(x, y, 12.5f, 14);
+        this.isInvincible = false;
+        this.health=3;
+        this.invincibilityTime = 1.7f;
+        this.knockbackSpeed = 10f; // adjust as needed
+        this.knockbackTime = 1f; // half a second knockback
+        this.knockbackDirection = new Vector2();
     }
 
 
@@ -80,13 +97,36 @@ public class Character extends GameObject implements Collidable {
         switch (type) {
             case WALL:
                 setPosition(previousX, previousY);
-                System.out.println("wall collision works");
                 break;
             case ENEMY:
+                if (!isInvincible) {
+                    loseHealth();
+                    Vector2 enemyPosition = new Vector2(((Enemy) other).getX(),((Enemy) other).getX());
+                    applyKnockback(enemyPosition);
+                    becomeInvincible();
+                }
                 // Handle collision with enemy (e.g., decrease life, change color)
                 break;
             // Add more cases for other object types as needed
         }
+    }
+
+    private void loseHealth() {
+        health--;
+        System.out.println("life lost");
+    }
+    private void gainHealth(){
+        health++;
+    }
+    private void applyKnockback(Vector2 knockbackSource) {
+        isInKnockback=true;
+        knockbackTime =0.7f;
+        knockbackDirection.set(this.x - knockbackSource.x, this.y - knockbackSource.y).nor();
+
+    }
+    private void becomeInvincible() {
+        isInvincible = true;
+        invincibilityTime = 3.0f; // 3 seconds of invincibility, for example
     }
 
     private void setPosition(float x, float y) {
@@ -96,6 +136,23 @@ public class Character extends GameObject implements Collidable {
     }
 
     public void update(float delta) {
+        if (isInvincible) {
+            invincibilityTime -= delta;
+            if (invincibilityTime <= 0) {
+                isInvincible = false; // Character is no longer invincible
+            }
+        }
+
+        // Update knockback movement
+        if (isInKnockback) {
+            knockbackTime -= delta;
+            x += knockbackDirection.x * knockbackSpeed * delta;
+            y += knockbackDirection.y * knockbackSpeed * delta;
+            if (knockbackTime <= 0) {
+                isInKnockback = false; // End knockback effect
+            }
+        }
+
         if (isMoving) {
             stateTime += delta; // Only update stateTime if the character is moving
         }
@@ -103,16 +160,20 @@ public class Character extends GameObject implements Collidable {
 
     @Override
     public void draw(SpriteBatch batch) {
+        if (isInKnockback || isInvincible) {
+            batch.setColor(Color.RED); // Red tint for knockback and invincibility
+        }
         TextureRegion currentFrame = currentAnimation.getKeyFrame(stateTime, true);
 
         float characterWidth = 11; // Increase for larger character
         float characterHeight = 17; // Increase for larger character
 
         batch.draw(currentFrame, x, y, characterWidth, characterHeight);
+        batch.setColor(Color.WHITE);
     }
     @Override
     public ObjectType getObjectType() {
-        return null;
+        return ObjectType.CHARACTER;
     }
 
     public float getX() {

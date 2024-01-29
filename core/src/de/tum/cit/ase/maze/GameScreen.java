@@ -148,7 +148,7 @@ public class GameScreen implements Screen {
     }
     private void initializeEnemies() {
         for (Vector2 spawnPoint : enemySpawnPoints) {
-            gameObjects.add(new Enemy(bottomLeftEnemyAnimation, spawnPoint.x, spawnPoint.y));
+            gameObjects.add(new Enemy(this,bottomLeftEnemyAnimation, spawnPoint.x, spawnPoint.y));
         }
     }
 
@@ -192,17 +192,16 @@ public class GameScreen implements Screen {
             }
             gameObject.draw(batch);
         }
-
-
             // Draw the character
             if (character != null) {
                 character.draw(batch);
             }
-
-
-
             batch.end();
         }
+    public Character getPlayer() {
+        return character;
+    }
+
 
     private void updateCameraPosition(float delta) {
         float lerp = 0.1f; // Adjust this value as needed for smoother camera movement
@@ -214,8 +213,7 @@ public class GameScreen implements Screen {
         }
 
         // Adjust zoom level if necessary
-        camera.zoom = 0.5f; // Adjust these values as needed
-
+        camera.zoom = 0.4f; // Adjust these values as needed
         camera.update();
     }
     private void calculateMazeDimensions() {
@@ -292,12 +290,11 @@ public class GameScreen implements Screen {
         this.spawnY = spawnY;
     }
 
-    public Collidable checkCollision(float potentialX, float potentialY, Character character) {
-        Rectangle potentialBounds = new Rectangle(potentialX, potentialY, character.getBoundingBox().width, character.getBoundingBox().height);
+    public Collidable checkCollision(float potentialX, float potentialY,GameObject object ) {
+        Rectangle potentialBounds = new Rectangle(potentialX, potentialY, object.getBoundingBox().width, object.getBoundingBox().height);
         for (GameObject gameObject : gameObjects) {
-            if (gameObject instanceof Collidable && gameObject != character) {
+            if (gameObject instanceof Collidable && gameObject !=object) {
                 if (potentialBounds.overlaps(gameObject.getBoundingBox())) {
-                    System.out.println("collision  "+gameObject);
                     return (Collidable) gameObject;
                 }
             }
