@@ -263,7 +263,6 @@ public class GameScreen implements Screen {
         }
       //renderCollisionBoxes();
         batch.end();
-        renderCollisionBoxes();
         hudStage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f));
         hudStage.draw();
 
@@ -283,7 +282,7 @@ public class GameScreen implements Screen {
         }
 
         // Adjust zoom level if necessary
-        camera.zoom = 0.5f; // Adjust these values as needed
+        camera.zoom = 0.2f; // Adjust these values as needed
         camera.update();
     }
 
@@ -344,7 +343,7 @@ public class GameScreen implements Screen {
         }
         if (character != null) {
             camera.position.set(character.getX(), character.getY(), 0);
-            camera.zoom = 0.4f; // Adjust this value for desired zoom level
+            camera.zoom = 0.4f;
         }
         camera.update();
     }

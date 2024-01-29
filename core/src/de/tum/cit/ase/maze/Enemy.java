@@ -36,7 +36,7 @@ public class Enemy extends GameObject implements Collidable {
         this.normalSpeed = 20f;
         this.random = new Random();
         //this.followThreshold = random.nextFloat() * (5 -2 ) +2;
-        this.followThreshold =4;
+        this.followThreshold =2*16;
         this.targetPosition = new Vector2(x, y);
         this.maxDuration = random.nextFloat(3f, 6f);
         this.speed = normalSpeed;
@@ -149,6 +149,9 @@ public class Enemy extends GameObject implements Collidable {
                 slideAlongObstacle(moveDirection); // Slide along obstacle if collision detected
                 return; // Stop moving after handling collision
             }
+            else {
+                handleCollisions(delta,isFollowingPlayer);
+            }
         }
 
         // Apply full movement if no collision detected at increments
@@ -176,7 +179,7 @@ public class Enemy extends GameObject implements Collidable {
             float slideY = moveDirection.x > 0 ? findSlidePositionY(x + 1, y) : findSlidePositionY(x - 1, y);
             if (slideY != y) {
                 y = slideY;
-                setPosition(x, y);
+                this.getBoundingBox().setPosition(x, y);
             }
         }
         // Similarly, handle horizontal sliding when moving vertically

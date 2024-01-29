@@ -130,7 +130,7 @@ public class Character extends GameObject implements Collidable {
                 gameScreen.setLives(getLives() - 1); // Decrease lives
                 gameScreen.updateHUD(); // Update the HUD
                     Vector2 enemyPosition = new Vector2(((Enemy) other).getX(),((Enemy) other).getX());
-                    applyKnockback(enemyPosition);
+                    //applyKnockback(enemyPosition);
                     becomeInvincible();
                 break;
             case ENTRY:
