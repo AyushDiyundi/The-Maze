@@ -13,11 +13,11 @@ public abstract class GameObject {
         this.textureRegion = region;
         this.x = x * 16;
         this.y = y * 16;
-        this.boundingBox = new Rectangle(x, y, width,height);
+        this.boundingBox = new Rectangle(this.x,this. y, width,height);
     }
 
     public void draw(SpriteBatch batch) {
-        batch.draw(textureRegion, x, y);
+        batch.draw(textureRegion,this.x,this.y);
     }
     public Rectangle getBoundingBox() {
         return boundingBox;
