@@ -29,6 +29,18 @@ public class Character extends GameObject implements Collidable {
     private float x,previousX ,potentialX;
     private int lives;
     private float y,previousY,potentialY;
+    private boolean isInKnockback,handlingKnockback;
+
+    private float powerUpTimer = 0f;
+    private float originalSpeed = 50f; // Store the original speed
+    private Color originalColor = Color.WHITE; // Store the original color
+
+    private float knockbackSpeed;
+    private float knockbackTime;
+    private float knockbackRemaining;
+    private Vector2 knockbackDirection;
+
+
     public void setGameScreen(GameScreen gameScreen) {
         this.gameScreen = gameScreen;
     }
@@ -128,13 +140,36 @@ public class Character extends GameObject implements Collidable {
                 setPosition(previousX,previousY);
                 break;
             case KEY:
-                hasKey=true;
+                Key key = (Key) other;
+
+                // Mark the key as collected
+                key.setCollected(true);
+                setPosition(x, y);
+
+                // Set the flag to indicate that the character has collected the key
+                hasKey = true;
+                updateHUD();
                 setPosition(x,y);
                 break;
+
             case EXIT:
+                if (hasKey) {
+                    // Transition to the victory screen
+                    gameScreen.goToVictoryScreen();}
                 break;
             case POWER:
-                powerUpActive=true;
+                if (!powerUpActive) {
+                    Power power = (Power) other;
+                    powerUpActive = true;
+                    powerUpTimer = 3f; // 3 seconds of increased speed
+                    originalSpeed = speed; // Store the original speed
+                    originalColor = Color.WHITE; // Store the original color
+                    speed *= 2; // Double the character's speed (adjust as needed)
+                    // Change the character's color to yellow
+                    // setColor(Color.YELLOW);
+                    // Remove the collected power-up from the gameObjects list
+                    gameScreen.getGameObjects().remove(other);
+                }
                 setPosition(x,y);
                 break;
             case TRAP:
@@ -194,16 +229,37 @@ public class Character extends GameObject implements Collidable {
                 isInvincible = false; // Character is no longer invincible
             }
         }
+
+
+
+        // Handle power-up timer
+        if (powerUpActive) {
+            powerUpTimer -= delta;
+            if (powerUpTimer <= 0) {
+                // Power-up duration has ended, revert speed and color
+                powerUpActive = false;
+                speed = originalSpeed; // Restore the original speed
+                // setColor(originalColor); // Restore the original color
+            }
+        }
+
         if (isMoving) {
             stateTime += delta; // Only update stateTime if the character is moving
         }
     }
 
+
+
     @Override
     public void draw(SpriteBatch batch) {
-        if (isInvincible) {
-            batch.setColor(Color.RED);
+        if (isInKnockback || isInvincible) {
+            batch.setColor(Color.RED); // Red tint for knockback and invincibility
+        } else if (powerUpActive) {
+            batch.setColor(Color.YELLOW); // Yellow tint for power-up
+        } else {
+            batch.setColor(Color.WHITE); // Default color
         }
+
         TextureRegion currentFrame = currentAnimation.getKeyFrame(stateTime, true);
 
         float characterWidth = 13; // Increase for larger character
@@ -212,9 +268,15 @@ public class Character extends GameObject implements Collidable {
         batch.draw(currentFrame, x, y, characterWidth, characterHeight);
         batch.setColor(Color.WHITE);
     }
+
     @Override
     public ObjectType getObjectType() {
         return ObjectType.CHARACTER;
+    }
+    public void updateHUD() {
+        if (gameScreen != null) {
+            gameScreen.updateKeyVisibility(hasKey);
+        }
     }
 
     public float getX() {
@@ -262,4 +324,6 @@ public class Character extends GameObject implements Collidable {
     public boolean isPowerUpActive() {
         return powerUpActive;
     }
+
+
 }

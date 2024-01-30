@@ -19,6 +19,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class GameScreen implements Screen {
@@ -50,6 +51,11 @@ public class GameScreen implements Screen {
     private Texture powerUpIconTexture;
     private int collectedLives;
     private int totalTime;
+    private boolean keyCollected = false;
+    private Image keyImage;
+    private float hudX; // Add these two fields
+    private float hudY;
+
 
     private void loadHudTextures() {
         heartTexture = new Texture(Gdx.files.internal("heart.png"));
@@ -262,7 +268,17 @@ public class GameScreen implements Screen {
         if (character != null) {
             character.draw(batch);
         }
-      //renderCollisionBoxes();
+        for (Iterator<GameObject> iterator = gameObjects.iterator(); iterator.hasNext();) {
+            GameObject gameObject = iterator.next();
+            if (gameObject instanceof Key) {
+                Key key = (Key) gameObject;
+                if (key.isCollected()) {
+                    // Remove the collected key from the gameObjects list
+                    iterator.remove();
+                }
+            }
+        }
+        //renderCollisionBoxes();
         batch.end();
         hudStage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f));
         hudStage.draw();
@@ -406,11 +422,26 @@ public class GameScreen implements Screen {
         loadHudTextures();
         heartImages = new ArrayList<>(); // Initialize the heartImages list
 
+        // Set the initial position for the HUD elements
+        hudX = Gdx.graphics.getWidth() * 0.5f;
+        hudY = Gdx.graphics.getHeight() * 0.9f;
+
         // Create heart images for the initial three lives
         for (int i = 0; i < 3; i++) {
             createHeartImage();
         }
+
+        // Initialize key image after creating heart images to ensure it's on top
+        keyImage = new Image(keyIconTexture); // Initialize keyImage here
+        float keySize = 35f;
+        keyImage.setSize(keySize, keySize);
+        float keyX = hudX;
+        float keyY = hudY + 50f; // Adjust this value to set the vertical position above the hearts
+        keyImage.setPosition(keyX, keyY);
+        hudStage.addActor(keyImage);
+        keyImage.setVisible(false); // Initially, the key is not visible
     }
+
     void createHeartImage() {
         Image heartImage = new Image(heartTexture);
 
@@ -430,6 +461,30 @@ public class GameScreen implements Screen {
         heartImages.add(heartImage);
         collectedLives++;
     }
+    private void initializeKeyImage() {
+        keyImage = new Image(keyIconTexture);
+        float keySize = 35f;
+        keyImage.setSize(keySize, keySize);
+        // Position the key above the heart images
+        float keyX = hudX;
+        float keyY = hudY + 1f; // Adjust this value to set the vertical position above the hearts
+        keyImage.setPosition(keyX, keyY);
+        hudStage.addActor(keyImage);
+        keyImage.setVisible(false); // Initially, the key is not visible
+    }
+    public void collectKey() {
+        keyCollected = true;
+        keyImage.setVisible(true); // Set the key image to be visible when collected
+    }
+    public void updateKeyVisibility(boolean hasKey) {
+        if (keyImage != null) {
+            keyImage.setVisible(hasKey);
+        }
+    }
+
+
+
+
     public void updateHUD() {
         if (!heartImages.isEmpty()) {
             Image lastHeartImage = heartImages.remove(heartImages.size() - 1);
@@ -449,11 +504,15 @@ public class GameScreen implements Screen {
         // Transition to the menu screen
         game.setScreen(new MenuScreen(game));
     }
+    public void goToVictoryScreen() {
+        // You might need to stop the game music and dispose of other resources here
+        if (gameMusic != null) {
+            gameMusic.stop();
+            gameMusic.dispose();
+        }
 
+        // Transition to the victory screen
+        game.setScreen(new VictoryScreen(game));
+    }
 
 }
-
-
-
-
-
