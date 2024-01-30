@@ -45,7 +45,7 @@ public class MenuScreen implements Screen {
         Viewport viewport = new ScreenViewport(camera);
         stage = new Stage(viewport, game.getSpriteBatch());
         backgroundTexture = new Texture(Gdx.files.internal("MenuBG.png"));
-        menuMusic = Gdx.audio.newMusic(Gdx.files.internal("menu.mp3"));
+        menuMusic = Gdx.audio.newMusic(Gdx.files.internal("menu2.mp3"));
         setupStages();
         setupLabels();
     }

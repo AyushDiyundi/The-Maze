@@ -27,7 +27,7 @@ public class Character extends GameObject implements Collidable {
     private boolean isInvincible;
     private float invincibilityTime;
     private float x,previousX ,potentialX;
-    private int lives;
+
     private float y,previousY,potentialY;
     private boolean isInKnockback,handlingKnockback;
 
@@ -58,7 +58,7 @@ public class Character extends GameObject implements Collidable {
         this.currentAnimation = down; // Default animation
         this.boundingBox = new Rectangle(x, y, 12.5f, 12);
         this.isInvincible = false;
-        this.lives=3;
+
         this.invincibilityTime = 3f;
     }
 
@@ -155,7 +155,7 @@ public class Character extends GameObject implements Collidable {
             case EXIT:
                 if (hasKey) {
                     // Transition to the victory screen
-                    gameScreen.goToVictoryScreen();}
+                    gameScreen.goToExitScreen();}
                 break;
             case POWER:
                 if (!powerUpActive) {
@@ -173,14 +173,14 @@ public class Character extends GameObject implements Collidable {
                 setPosition(x,y);
                 break;
             case TRAP:
-                gameScreen.setLives(getLives() - 1); // Decrease lives
+                gameScreen.setLives(gameScreen.getLives() - 1); // Decrease lives
                 gameScreen.updateHUD(); // Update the HUD
                 becomeInvincible();
                 break;
             case LIFE:
                 if (!((Life) other).isCollected()) {
                     ((Life) other).setCollected(true); // Mark the life as collected
-                    gameScreen.setLives(getLives() + 1); // Increase the character's lives
+                    gameScreen.setLives(gameScreen.getLives() + 1); // Increase the character's lives
                     gameScreen.createHeartImage(); // Add a new heart image to the HUD
                     // Remove the collected life from the gameObjects list
                     gameScreen.getGameObjects().remove(other);
@@ -303,18 +303,7 @@ public class Character extends GameObject implements Collidable {
         isInvincible = invincible;
     }
 
-    public int getLives() {
-        return lives;
-    }
 
-    public void setLives(int lives) {
-        this.lives = lives;
-
-        // Check if lives are 0 and transition to the menu screen
-        if (this.lives <= 0) {
-            gameScreen.goToMenuScreen();
-        }
-    }
 
 
     public boolean isHasKey() {

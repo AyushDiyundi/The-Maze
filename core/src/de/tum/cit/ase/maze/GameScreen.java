@@ -277,6 +277,11 @@ public class GameScreen implements Screen {
                     iterator.remove();
                 }
             }
+        } System.out.println(getLives());
+        if (character != null && getLives() <= 0) {
+
+            goToExitScreen();
+            return; // Stop further rendering and updating
         }
         //renderCollisionBoxes();
         batch.end();
@@ -504,15 +509,17 @@ public class GameScreen implements Screen {
         // Transition to the menu screen
         game.setScreen(new MenuScreen(game));
     }
-    public void goToVictoryScreen() {
+    public void goToExitScreen() {
         // You might need to stop the game music and dispose of other resources here
+        Gdx.app.log("GameScreen", "Transitioning to Exit Screen");
         if (gameMusic != null) {
             gameMusic.stop();
             gameMusic.dispose();
         }
 
         // Transition to the victory screen
-        game.setScreen(new VictoryScreen(game));
+        game.setScreen(new ExitScreen(game));
     }
+
 
 }

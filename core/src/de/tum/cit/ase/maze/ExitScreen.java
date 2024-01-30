@@ -2,18 +2,17 @@ package de.tum.cit.ase.maze;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
 
-public class VictoryScreen implements Screen {
+public class ExitScreen implements Screen {
 
     private MazeRunnerGame game;
     private Texture victoryTexture;
     private SpriteBatch batch;
 
-    public VictoryScreen(MazeRunnerGame game) {
+    public ExitScreen(MazeRunnerGame game) {
         this.game = game;
         batch = new SpriteBatch();
         victoryTexture = new Texture(Gdx.files.internal("victory_screen.png")); // Place a victory image in your assets
