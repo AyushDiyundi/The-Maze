@@ -19,8 +19,8 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 /**
- * The MenuScreen class is responsible for displaying the main menu of the game.
- * It extends the LibGDX Screen class and sets up the UI components for the menu.
+ * The MenuScreen class is responsible for displaying the main menu and pause menu in the MazeRunnerGame.
+ * It allows the user to navigate through options like starting the game, selecting levels, adjusting sound settings, and exiting the game.
  */
 public class MenuScreen implements Screen {
 
@@ -31,11 +31,12 @@ public class MenuScreen implements Screen {
     private boolean pauseMenuVisible;
     private Texture backgroundTexture;
     private Music menuMusic;
-
-    public Music getMenuMusic() {
-        return menuMusic;
-    }
-
+    /**
+     * Constructor for the MenuScreen. Initializes the main components used in the menu screen,
+     * including the stage, camera, and music.
+     *
+     * @param game The instance of MazeRunnerGame to which this menu screen belongs.
+     */
     public MenuScreen(MazeRunnerGame game) {
         this.game = game;
         batch=new SpriteBatch();
@@ -48,6 +49,9 @@ public class MenuScreen implements Screen {
         menuMusic = Gdx.audio.newMusic(Gdx.files.internal("menu2.mp3"));
         setupStages();
     }
+    /**
+     * Plays the menu music in a loop. The volume is adjusted based on the current settings.
+     */
     public void playMenuMusic() {
         if (menuMusic != null) {
             menuMusic.setLooping(true);
@@ -55,6 +59,9 @@ public class MenuScreen implements Screen {
             menuMusic.play();
         }
     }
+    /**
+     * Sets up the stages for the main menu and pause menu based on the game's state.
+     */
     private void setupStages() {
         mainMenu();
         pauseMenu();
@@ -79,7 +86,10 @@ public class MenuScreen implements Screen {
         button.pad(10);
         return button;
     }
-
+    /**
+     * Sets up the main menu with buttons for starting the game, changing levels,
+     * adjusting settings, and exiting the game.
+     */
     private void mainMenu() {
         Table table = createMenuTable();
         welcomeLabel = createLabel("The Maze  ","title" ,!pauseMenuVisible);
@@ -92,6 +102,9 @@ public class MenuScreen implements Screen {
         );
     }
 
+    /**
+     * Sets up the pause menu which is displayed when the game is paused.
+     */
     private void pauseMenu() {
         Table table = createMenuTable();
         pausedLabel = createLabel(" Game Paused ", "title",pauseMenuVisible);
@@ -228,6 +241,9 @@ public class MenuScreen implements Screen {
             menuMusic.dispose();
         }
         pause();
+    }
+    public Music getMenuMusic() {
+        return menuMusic;
     }
 
 }
