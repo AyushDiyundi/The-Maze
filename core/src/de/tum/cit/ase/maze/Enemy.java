@@ -28,14 +28,13 @@ public class Enemy extends GameObject implements Collidable {
     }
 
     public Enemy(GameScreen gameScreen, Animation<TextureRegion> animation, float x, float y) {
-        super(null, x * 16, y * 16, 12, 14);
+        super(null, x * 16, y * 16, 12, 12);
         this.gameScreen = gameScreen;
         this.animation = animation;
         this.x = x * 16;
         this.y = y * 16;
-        this.normalSpeed = 20f;
+        this.normalSpeed = 15f;
         this.random = new Random();
-        //this.followThreshold = random.nextFloat() * (5 -2 ) +2;
         this.followThreshold =2*16;
         this.targetPosition = new Vector2(x, y);
         this.maxDuration = random.nextFloat(3f, 6f);
@@ -52,10 +51,22 @@ public class Enemy extends GameObject implements Collidable {
         } else {
             speed = normalSpeed; // Reset to normal speed
         }
-        float distanceToPlayer = Vector2.dst(x, y, gameScreen.getPlayer().getX(), gameScreen.getPlayer().getY());
-        boolean isFollowingPlayer = distanceToPlayer <= followThreshold;
+        Vector2 moveDirection = getDirectionVector(currentDirection);
+        float potentialX = x + moveDirection.x * speed * delta;
+        float potentialY = y + moveDirection.y * speed * delta;
 
-        if (isFollowingPlayer) {
+        // Check for collisions at the potential new position
+        Collidable collidable = gameScreen.checkCollision(potentialX, potentialY, this);
+        if (collidable != null) {
+            this.handleCollision(collidable); // Handle collision for the enemy
+            collidable.handleCollision(this); // Handle collision for the collided object
+        } else {
+            // If no collision, update position
+            setPosition(potentialX, potentialY);
+        }
+
+        float distanceToPlayer = Vector2.dst(x, y, gameScreen.getPlayer().getX(), gameScreen.getPlayer().getY());
+        if (distanceToPlayer <= followThreshold && !gameScreen.getPlayer().isInvincible()) {
             followPlayer(delta);
         } else {
             randomMove(delta);
@@ -121,9 +132,13 @@ public class Enemy extends GameObject implements Collidable {
     private void setPosition(float x, float y) {
         this.x = x;
         this.y = y;
+        this.getBoundingBox().setPosition(x, y);
         // Update the bounding box or any other relevant position-dependent properties
     }
     private Vector2 getDirectionVector(Direction direction) {
+        if (direction == null) {
+            return new Vector2(0, 0); // Default to stationary
+        }
         switch (direction) {
             case UP:
                 return new Vector2(0, 1); // Moving upwards increases the Y value
@@ -245,10 +260,18 @@ public class Enemy extends GameObject implements Collidable {
                 changeDirection();
                 break;
             case CHARACTER:
-                speedReductionTimer = 4.0f;
-                if (((Character) other).isInvincible()) {
+                if (!((Character) other).isInvincible()) {
+                    gameScreen.setLives(gameScreen.getLives() - 1);
+                    gameScreen.updateHUD();
+                    speedReductionTimer = 4.0f;
                     isFollowingPlayer=false;
-                    currentDirection=previousDirection;
+                    changeDirection();
+                    System.out.println("Enemy collided with non-invincible character");
+                }
+                else
+                {
+                    System.out.println("Enemy collided with invincible character");
+                    changeDirection();
                 }
                 break;
 
@@ -285,7 +308,7 @@ public class Enemy extends GameObject implements Collidable {
     private boolean isPositionValid(float x, float y) {
         return x >= 0 && x < gameScreen.getMazeWidth() &&
                 y >= 0 && y < gameScreen.getMazeHeight() &&
-                gameScreen.checkCollision(x, y, this) == null;
+                (gameScreen.checkCollision(x, y, this) )== null;
     }
     @Override
     public ObjectType getObjectType() {

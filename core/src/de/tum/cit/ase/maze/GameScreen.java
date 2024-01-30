@@ -49,6 +49,7 @@ public class GameScreen implements Screen {
     private Texture keyIconTexture;
     private Texture powerUpIconTexture;
     private int collectedLives;
+    private int totalTime;
 
     private void loadHudTextures() {
         heartTexture = new Texture(Gdx.files.internal("heart.png"));
