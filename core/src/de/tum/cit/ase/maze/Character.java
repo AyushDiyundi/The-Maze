@@ -123,9 +123,7 @@ public class Character extends GameObject implements Collidable {
     @Override
     public void handleCollision(Collidable other) {
         ObjectType type = other.getObjectType();
-
-        if (isInvincible || (lastHazardCollided == other)) {
-            // Ignore collisions if invincible or if it's with the same hazard as the last collision
+        if (isInvincible||(lastHazardCollided == other)){
             return;
         }
         switch (type) {
@@ -134,14 +132,16 @@ public class Character extends GameObject implements Collidable {
                 break;
             case ENEMY:
                 if (!isInvincible) {
+                    gameScreen.getGame().getHurt().play();
                     handleHazardCollision();}
                 break;
             case ENTRY:
+                gameScreen.getGame().getUnlock().play();
                 setPosition(previousX,previousY);
                 break;
             case KEY:
                 Key key = (Key) other;
-
+                gameScreen.getGame().getUnlock().play();
                 // Mark the key as collected
                 key.setCollected(true);
                 setPosition(x, y);
@@ -154,11 +154,13 @@ public class Character extends GameObject implements Collidable {
 
             case EXIT:
                 if (hasKey) {
+                    gameScreen.getGame().getUnlock().play();
                     gameScreen.setVictory(true);
                     gameScreen.goToExitScreen();}
                 break;
             case POWER:
                 if (!powerUpActive) {
+                    gameScreen.getGame().getBuff().play();
                     Power power = (Power) other;
                     powerUpActive = true;
                     powerUpTimer = 3f; // 3 seconds of increased speed
@@ -174,11 +176,13 @@ public class Character extends GameObject implements Collidable {
                 break;
             case TRAP:
                 if (!isInvincible) {
+                    gameScreen.getGame().getHurt().play();
                     handleHazardCollision();}
                 break;
 
             case LIFE:
                 if (!((Life) other).isCollected()) {
+                    gameScreen.getGame().getBuff().play();
                     ((Life) other).setCollected(true); // Mark the life as collected
                     gameScreen.setLives(gameScreen.getLives() + 1); // Increase the character's lives by 1
                     // The HUD update should be handled within setLives()
@@ -285,6 +289,7 @@ public class Character extends GameObject implements Collidable {
             gameScreen.updateKeyVisibility(hasKey);
         }
     }
+
 
     public float getX() {
         return x;

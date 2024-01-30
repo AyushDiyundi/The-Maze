@@ -2,6 +2,7 @@ package de.tum.cit.ase.maze;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -18,6 +19,9 @@ public class MazeRunnerGame extends Game {
     private Animation<TextureRegion> characterUpAnimation;
     private Animation<TextureRegion>  characterRightAnimation;
     private Animation<TextureRegion>characterLeftAnimation;
+    private Sound hurt;
+    private Sound unlock;
+    private Sound buff;
     private MenuScreen menuScreen;
     private GameScreen gameScreen;
     private final Maps maps;
@@ -34,6 +38,9 @@ public class MazeRunnerGame extends Game {
         maps.configureMaps();
         loadCharacterAnimation();
         soundSettings=new SoundSettings();
+        hurt= Gdx.audio.newSound(Gdx.files.internal("hit.mp3"));
+        unlock= Gdx.audio.newSound(Gdx.files.internal("unlock.mp3"));
+        buff = Gdx.audio.newSound(Gdx.files.internal("buff.mp3"));
         goToMenu();
     }
     private void loadCharacterAnimation() {
@@ -107,12 +114,19 @@ public class MazeRunnerGame extends Game {
             screen.hide();
             screen.dispose();
         }
-        if (spriteBatch != null) {
-            spriteBatch.dispose();
-        }
         if (skin != null) {
             skin.dispose();
         }
+        ;if(hurt !=null)
+            hurt.dispose();
+        ;if(buff!=null)
+            buff.dispose();
+        ;if(unlock !=null)
+            unlock.dispose();
+        if (spriteBatch != null) {
+            spriteBatch.dispose();
+        }
+        super.dispose();
     }
 
     public void disposeGameScreen() {
@@ -185,5 +199,17 @@ public class MazeRunnerGame extends Game {
 
     public GameScreen getGameScreen() {
         return gameScreen;
+    }
+
+    public Sound getHurt() {
+        return hurt;
+    }
+
+    public Sound getUnlock() {
+        return unlock;
+    }
+
+    public Sound getBuff() {
+        return buff;
     }
 }

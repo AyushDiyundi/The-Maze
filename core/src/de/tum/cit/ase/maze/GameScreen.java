@@ -31,7 +31,7 @@ public class GameScreen implements Screen {
     private Music gameMusic;
     private Character character;
     private int mazeWidth, mazeHeight;
-    private TextureLoader textureLoader, enemyLoader,lifeLoader,powerLoader;
+    private TextureLoader textureLoader, enemyLoader,lifeLoader,powerLoader,keyLoader;
     private final float CAMERA_PADDING = 0.1f;
     private float spawnX, spawnY;
     private int[][] mazeData;
@@ -50,7 +50,6 @@ public class GameScreen implements Screen {
     private List<Image> heartImages;
     private Texture heartTexture;
     private Texture keyIconTexture;
-    private Texture powerUpIconTexture;
     private int collectedLives;
     private int totalTime;
     private boolean keyCollected = false;
@@ -68,8 +67,6 @@ public class GameScreen implements Screen {
         heartTexture = new Texture(Gdx.files.internal("heart.png"));
         // Load key icon texture
         keyIconTexture = new Texture(Gdx.files.internal("key2.png"));
-        // Load power-up icon texture
-        powerUpIconTexture = new Texture(Gdx.files.internal("powerUp.png"));
     }
 
     private void initialize() {
@@ -80,6 +77,7 @@ public class GameScreen implements Screen {
         gameObjects = new ArrayList<>();
         enemySpawnPoints = new ArrayList<>(); // Initialize before loading game objects
         textureLoader = new TextureLoader(Gdx.files.internal("basictiles.png"));
+        keyLoader=new TextureLoader(Gdx.files.internal("objects.png"));
         enemyLoader = new TextureLoader(Gdx.files.internal("mobs.png"));
         lifeLoader = new TextureLoader(Gdx.files.internal("objects.png"));
         powerLoader = new TextureLoader(Gdx.files.internal("basictiles.png"));
@@ -134,7 +132,7 @@ public class GameScreen implements Screen {
 
     private void loadGameObjects(int[][] mazeData) {
         TextureRegion wallRegion = textureLoader.getTextureRegion(0, 0, 16, 16);
-        TextureRegion keyRegion = new TextureRegion(keyIconTexture);
+        TextureRegion keyRegion =  keyLoader.getTextureRegion(0, 4 * 16, 16, 16);
         TextureRegion entryRegion = textureLoader.getTextureRegion(2 * 16, 6 * 16, 16, 16);
         TextureRegion exitRegion = textureLoader.getTextureRegion(0, 6 * 16, 16, 16);
         TextureRegion trapRegion = textureLoader.getTextureRegion(4* 16, 7 * 16, 16, 16);
@@ -401,7 +399,6 @@ public class GameScreen implements Screen {
         batch.dispose();
         heartTexture.dispose();
         keyIconTexture.dispose();
-        powerUpIconTexture.dispose();
         hudStage.dispose();
     }
 
@@ -554,5 +551,9 @@ public class GameScreen implements Screen {
 
     public boolean isCollisionHandledThisFrame() {
         return collisionHandledThisFrame;
+    }
+
+    public MazeRunnerGame getGame() {
+        return game;
     }
 }
