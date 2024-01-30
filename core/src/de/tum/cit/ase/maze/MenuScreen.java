@@ -47,7 +47,6 @@ public class MenuScreen implements Screen {
         backgroundTexture = new Texture(Gdx.files.internal("MenuBG.png"));
         menuMusic = Gdx.audio.newMusic(Gdx.files.internal("menu2.mp3"));
         setupStages();
-        setupLabels();
     }
     public void playMenuMusic() {
         if (menuMusic != null) {
@@ -61,10 +60,6 @@ public class MenuScreen implements Screen {
         pauseMenu();
     }
 
-    private void setupLabels() {
-        victory = createLabel("Congratulations! You Won!","title",false);
-        gameOver = createLabel("Game Over. Better luck next time!","title", false);
-    }
 
     private Label createLabel(String text,String style, boolean visible) {
         Label label = new Label(text, game.getSkin(),style);
@@ -118,7 +113,8 @@ public class MenuScreen implements Screen {
         levelLabel = createLabel("Select Level", "title", true);
         levelLabel.setAlignment(Align.center);
         playMenuMusic();
-
+        table.add(levelLabel).center().padBottom(10); // Adjust padding as needed
+        table.row();
         for (int i = 1; i <= 5; i++) {
             int lvl = i;
             addMenuItems(table, createButton("Level " +lvl, () -> game.loadMaps(lvl), true));

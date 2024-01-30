@@ -43,6 +43,7 @@ public class GameScreen implements Screen {
     private boolean hasKey;
     private boolean powerUpActive;
     private float powerUpTimer;
+    private boolean victory;
 
     private ShapeRenderer shapeRenderer;
     private List<Image> heartImages;
@@ -88,6 +89,7 @@ public class GameScreen implements Screen {
         this.game = game;
         this.mazeData = mazeData;
         this.lives=3;
+        this.victory=false;
         initialize(); // This will now properly initialize enemySpawnPoints before loadGameObjects is called
         initialZoom = calculateInitialZoom();
         calculateCameraConstraints();
@@ -516,10 +518,14 @@ public class GameScreen implements Screen {
             gameMusic.stop();
             gameMusic.dispose();
         }
-
-        // Transition to the victory screen
-        game.setScreen(new ExitScreen(game));
+        game.setScreen(new ExitScreen(game,victory));
     }
 
+    public boolean isVictory() {
+        return victory;
+    }
 
+    public void setVictory(boolean victory) {
+        this.victory = victory;
+    }
 }

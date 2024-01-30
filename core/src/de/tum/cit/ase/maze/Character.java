@@ -154,7 +154,7 @@ public class Character extends GameObject implements Collidable {
 
             case EXIT:
                 if (hasKey) {
-                    // Transition to the victory screen
+                    gameScreen.setVictory(true);
                     gameScreen.goToExitScreen();}
                 break;
             case POWER:

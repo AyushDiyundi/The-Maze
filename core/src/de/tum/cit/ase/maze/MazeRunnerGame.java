@@ -36,8 +36,6 @@ public class MazeRunnerGame extends Game {
         soundSettings=new SoundSettings();
         goToMenu();
     }
-
-
     private void loadCharacterAnimation() {
         Texture walkSheet = new Texture(Gdx.files.internal("character.png"));
         int frameWidth = 16;
