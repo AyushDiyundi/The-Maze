@@ -15,6 +15,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
@@ -56,12 +57,17 @@ public class GameScreen implements Screen {
     private Image keyImage;
     private float hudX; // Add these two fields
     private float hudY;
+    private static final int BASE_SCORE = 1000;
+    private static final int SCORE_PER_LIFE = 100;
+    private static final int TIME_PENALTY = 10;
+    private boolean collisionHandledThisFrame;
+
 
 
     private void loadHudTextures() {
         heartTexture = new Texture(Gdx.files.internal("heart.png"));
         // Load key icon texture
-        keyIconTexture = new Texture(Gdx.files.internal("powerUP.png"));
+        keyIconTexture = new Texture(Gdx.files.internal("key2.png"));
         // Load power-up icon texture
         powerUpIconTexture = new Texture(Gdx.files.internal("powerUp.png"));
     }
@@ -90,9 +96,11 @@ public class GameScreen implements Screen {
         this.mazeData = mazeData;
         this.lives=3;
         this.victory=false;
+        loadHudTextures();
         initialize(); // This will now properly initialize enemySpawnPoints before loadGameObjects is called
         initialZoom = calculateInitialZoom();
         calculateCameraConstraints();
+
         loadGameObjects(mazeData); // This is where game objects are actually loaded
         initializeHUD();
     }
@@ -126,7 +134,7 @@ public class GameScreen implements Screen {
 
     private void loadGameObjects(int[][] mazeData) {
         TextureRegion wallRegion = textureLoader.getTextureRegion(0, 0, 16, 16);
-        TextureRegion keyRegion = textureLoader.getTextureRegion(6 * 16, 3 * 16, 16, 6);
+        TextureRegion keyRegion = new TextureRegion(keyIconTexture);
         TextureRegion entryRegion = textureLoader.getTextureRegion(2 * 16, 6 * 16, 16, 16);
         TextureRegion exitRegion = textureLoader.getTextureRegion(0, 6 * 16, 16, 16);
         TextureRegion trapRegion = textureLoader.getTextureRegion(4* 16, 7 * 16, 16, 16);
@@ -251,7 +259,8 @@ public class GameScreen implements Screen {
             character.update(delta); // Update character state
             updateCameraPosition(delta); // Update the camera to follow the character
         }
-
+        totalTime += delta;
+        collisionHandledThisFrame = false;
         // Update the camera and set the projection matrix
         camera.update();
         batch.setProjectionMatrix(camera.combined);
@@ -290,6 +299,12 @@ public class GameScreen implements Screen {
         hudStage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f));
         hudStage.draw();
 
+    }
+    public int calculateScore() {
+        int score = BASE_SCORE;
+        score += lives * SCORE_PER_LIFE;
+        score -= totalTime * TIME_PENALTY;
+        return Math.max(score, 0); // Ensure that the score does not go below 0
     }
     public Character getPlayer() {
         return character;
@@ -416,6 +431,7 @@ public class GameScreen implements Screen {
 
     public void setLives(int lives) {
         this.lives = lives;
+        updateHUD(); // Update the HUD whenever lives change
     }
 
     public int getLives() {
@@ -427,50 +443,47 @@ public class GameScreen implements Screen {
     private void initializeHUD() {
         hudStage = new Stage(new ScreenViewport());
         loadHudTextures();
-        heartImages = new ArrayList<>(); // Initialize the heartImages list
 
-        // Set the initial position for the HUD elements
-        hudX = Gdx.graphics.getWidth() * 0.5f;
-        hudY = Gdx.graphics.getHeight() * 0.9f;
+        heartImages = new ArrayList<>();
 
-        // Create heart images for the initial three lives
-        for (int i = 0; i < 3; i++) {
-            createHeartImage();
+        // Create heart images for the initial lives
+        for (int i = 0; i < lives; i++) {
+            addHeartImage();
         }
 
-        // Initialize key image after creating heart images to ensure it's on top
-        keyImage = new Image(keyIconTexture); // Initialize keyImage here
-        float keySize = 35f;
+        // Initialize key image
+        keyImage = new Image(keyIconTexture);
+        float keySize = 50f; // Increased size
         keyImage.setSize(keySize, keySize);
-        float keyX = hudX;
-        float keyY = hudY + 50f; // Adjust this value to set the vertical position above the hearts
-        keyImage.setPosition(keyX, keyY);
+        keyImage.setPosition(Gdx.graphics.getWidth() - keySize - 10, Gdx.graphics.getHeight() - keySize - 10);
+        keyImage.setVisible(keyCollected);
         hudStage.addActor(keyImage);
-        keyImage.setVisible(false); // Initially, the key is not visible
     }
 
-    void createHeartImage() {
+
+
+    void addHeartImage() {
         Image heartImage = new Image(heartTexture);
-
-        // Set the size of the heart image
-        float heartSize = 35f; // Change this to the desired size
+        float heartSize = 50f; // Increased size
         heartImage.setSize(heartSize, heartSize);
-
-        float hudX = 0; // Start at X coordinate 0
-        float hudY = mazeHeight + 33; // Start at Y coordinate 100 on the map
-
-        // Calculate the position for the new heart image
-        float heartX = hudX + collectedLives * (heartSize + 10); // Adjust the spacing as needed
-        float heartY = hudY;
-
-        heartImage.setPosition(heartX, heartY);
-        hudStage.addActor(heartImage);
         heartImages.add(heartImage);
-        collectedLives++;
+        hudStage.addActor(heartImage);
+
+        // Update positions of heart images
+        for (int i = 0; i < heartImages.size(); i++) {
+            Image img = heartImages.get(i);
+            img.setPosition(10 + i * (heartSize + 10), Gdx.graphics.getHeight() - heartSize - 10);
+        }
+    }
+    void removeHeartImage() {
+        if (!heartImages.isEmpty()) {
+            Image lastHeartImage = heartImages.remove(heartImages.size() - 1);
+            hudStage.getActors().removeValue(lastHeartImage, true);
+        }
     }
     private void initializeKeyImage() {
         keyImage = new Image(keyIconTexture);
-        float keySize = 35f;
+        float keySize = 50f;
         keyImage.setSize(keySize, keySize);
         // Position the key above the heart images
         float keyX = hudX;
@@ -489,14 +502,20 @@ public class GameScreen implements Screen {
         }
     }
 
-
-
-
-    public void updateHUD() {
-        if (!heartImages.isEmpty()) {
-            Image lastHeartImage = heartImages.remove(heartImages.size() - 1);
-            hudStage.getActors().removeValue(lastHeartImage, true);
+   void updateHUD() {
+        // Ensure no duplicate lives are added in HUD
+        for (Image heartImage : heartImages) {
+            hudStage.getActors().removeValue(heartImage, true);
         }
+        heartImages.clear();
+
+        for (int i = 0; i < lives; i++) {
+            addHeartImage();
+        }
+    }
+
+    public Animation<TextureRegion> getBottomLeftEnemyAnimation() {
+        return bottomLeftEnemyAnimation;
     }
 
     public SpriteBatch getBatch() {
@@ -513,7 +532,8 @@ public class GameScreen implements Screen {
     }
     public void goToExitScreen() {
         // You might need to stop the game music and dispose of other resources here
-        Gdx.app.log("GameScreen", "Transitioning to Exit Screen");
+        int finalScore = calculateScore();
+        Gdx.app.log("GameScreen", "Final Score: " + finalScore);
         if (gameMusic != null) {
             gameMusic.stop();
             gameMusic.dispose();
@@ -527,5 +547,12 @@ public class GameScreen implements Screen {
 
     public void setVictory(boolean victory) {
         this.victory = victory;
+    }
+    public void setCollisionHandledThisFrame(boolean handled) {
+        this.collisionHandledThisFrame = handled;
+    }
+
+    public boolean isCollisionHandledThisFrame() {
+        return collisionHandledThisFrame;
     }
 }

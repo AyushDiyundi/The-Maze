@@ -26,4 +26,6 @@ public class Key extends GameObject implements Collidable {
     public ObjectType getObjectType() {
         return ObjectType.KEY;
     }
+
+
 }

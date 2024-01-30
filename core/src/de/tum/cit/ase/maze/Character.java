@@ -26,19 +26,17 @@ public class Character extends GameObject implements Collidable {
     private boolean powerUpActive = false;
     private boolean isInvincible;
     private float invincibilityTime;
-    private float x,previousX ,potentialX;
+    private float x,previousX;
 
-    private float y,previousY,potentialY;
-    private boolean isInKnockback,handlingKnockback;
+    private float y,previousY;
+
 
     private float powerUpTimer = 0f;
     private float originalSpeed = 50f; // Store the original speed
     private Color originalColor = Color.WHITE; // Store the original color
+    private Collidable lastHazardCollided = null;
 
-    private float knockbackSpeed;
-    private float knockbackTime;
-    private float knockbackRemaining;
-    private Vector2 knockbackDirection;
+
 
 
     public void setGameScreen(GameScreen gameScreen) {
@@ -64,6 +62,7 @@ public class Character extends GameObject implements Collidable {
 
 
     public void move(float delta) {
+
         previousX = x;
         previousY = y;
         float potentialX = x;
@@ -95,6 +94,9 @@ public class Character extends GameObject implements Collidable {
         // Update animation state
         updateAnimationState();
         isMoving = x!=previousX|| y !=previousY;
+        if (lastHazardCollided != null && !boundingBox.overlaps(lastHazardCollided.getBoundingBox())) {
+            lastHazardCollided = null; // Reset if no longer in collision with the last hazard
+        }
     }
 
     private void updatePositionAndCheckCollisions(float delta) {
@@ -121,7 +123,9 @@ public class Character extends GameObject implements Collidable {
     @Override
     public void handleCollision(Collidable other) {
         ObjectType type = other.getObjectType();
-        if (isInvincible && (type == ObjectType.ENEMY || type == ObjectType.TRAP)) {
+
+        if (isInvincible || (lastHazardCollided == other)) {
+            // Ignore collisions if invincible or if it's with the same hazard as the last collision
             return;
         }
         switch (type) {
@@ -130,11 +134,7 @@ public class Character extends GameObject implements Collidable {
                 break;
             case ENEMY:
                 if (!isInvincible) {
-                    gameScreen.setLives(gameScreen.getLives() - 1); // Decrease lives
-                    gameScreen.updateHUD(); // Update the HUD
-                    becomeInvincible();
-                }
-                repositionAfterCollision((Enemy) other);
+                    handleHazardCollision();}
                 break;
             case ENTRY:
                 setPosition(previousX,previousY);
@@ -173,18 +173,17 @@ public class Character extends GameObject implements Collidable {
                 setPosition(x,y);
                 break;
             case TRAP:
-                gameScreen.setLives(gameScreen.getLives() - 1); // Decrease lives
-                gameScreen.updateHUD(); // Update the HUD
-                becomeInvincible();
+                if (!isInvincible) {
+                    handleHazardCollision();}
                 break;
+
             case LIFE:
                 if (!((Life) other).isCollected()) {
                     ((Life) other).setCollected(true); // Mark the life as collected
-                    gameScreen.setLives(gameScreen.getLives() + 1); // Increase the character's lives
-                    gameScreen.createHeartImage(); // Add a new heart image to the HUD
+                    gameScreen.setLives(gameScreen.getLives() + 1); // Increase the character's lives by 1
+                    // The HUD update should be handled within setLives()
                     // Remove the collected life from the gameObjects list
                     gameScreen.getGameObjects().remove(other);
-                    setPosition(x, y); // Update the character's position
                 }
                 break;
 
@@ -192,6 +191,12 @@ public class Character extends GameObject implements Collidable {
 
         }
     }
+    private void handleHazardCollision() {
+        gameScreen.setLives(gameScreen.getLives() - 1); // Notify GameScreen about the change in lives
+        becomeInvincible();
+    }
+
+
     private void repositionAfterCollision(Enemy enemy) {
         // Calculate a vector away from the enemy
         Vector2 awayFromEnemy = new Vector2(this.x - enemy.getX(), this.y - enemy.getY()).nor();
@@ -223,6 +228,8 @@ public class Character extends GameObject implements Collidable {
     }
 
     public void update(float delta) {
+
+
         if (isInvincible) {
             invincibilityTime -= delta;
             if (invincibilityTime <= 0) {
@@ -252,7 +259,7 @@ public class Character extends GameObject implements Collidable {
 
     @Override
     public void draw(SpriteBatch batch) {
-        if (isInKnockback || isInvincible) {
+        if ( isInvincible) {
             batch.setColor(Color.RED); // Red tint for knockback and invincibility
         } else if (powerUpActive) {
             batch.setColor(Color.YELLOW); // Yellow tint for power-up

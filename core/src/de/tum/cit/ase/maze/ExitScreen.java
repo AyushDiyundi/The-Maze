@@ -21,10 +21,11 @@ public class ExitScreen implements Screen {
     private final Stage stage;
     private final MazeRunnerGame game;
     private SpriteBatch batch;
-    private Label messageLabel;
+    private Label messageLabel,scoreLabel;
     private Texture backgroundTexture;
     private Music exitMusic;
     private boolean isVictory;
+
 
     public ExitScreen(MazeRunnerGame game, boolean isVictory) {
         this.game = game;
@@ -47,9 +48,16 @@ public class ExitScreen implements Screen {
         }
     }
     private void setupUI() {
-        messageLabel = new Label(isVictory ? "Victory!" : "Game Over", game.getSkin(), "title");
-        messageLabel.setFontScale(2.0f);
+        messageLabel = new Label(isVictory ? "Victory!" : "Game Over!!", game.getSkin(), "title");
+        messageLabel.setFontScale(1.7f);
         messageLabel.setAlignment(Align.center);
+        // Setup the score message label
+        String scoreMessage = isVictory ? "Your Score: " + game.getGameScreen().calculateScore(): "Better Luck Next Time!!";
+        scoreLabel = new Label(scoreMessage, game.getSkin(),"title");
+        scoreLabel.setFontScale(.7f);
+        scoreLabel.setAlignment(Align.center);
+
+
 
         // Table for the message label at the top
         Table topTable = new Table();
@@ -57,6 +65,9 @@ public class ExitScreen implements Screen {
         topTable.setFillParent(true);
         topTable.add(messageLabel).center().padTop(20);
         stage.addActor(topTable);
+        // Add the score label to the top table
+        topTable.row(); // Move to the next row in the table
+        topTable.add(scoreLabel).center().padTop(10);
 
         // Table for buttons at the bottom
         Table bottomTable = new Table();

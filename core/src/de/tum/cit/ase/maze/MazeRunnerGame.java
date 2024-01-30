@@ -182,4 +182,8 @@ public class MazeRunnerGame extends Game {
     public void render() {
         super.render(); // This is important for delegating the render call
     }
+
+    public GameScreen getGameScreen() {
+        return gameScreen;
+    }
 }
