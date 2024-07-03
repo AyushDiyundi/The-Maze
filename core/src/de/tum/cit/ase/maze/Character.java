@@ -1,4 +1,5 @@
 package de.tum.cit.ase.maze;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
@@ -6,7 +7,6 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.math.Vector2;
 
 
 public class Character extends GameObject implements Collidable {
@@ -27,17 +27,12 @@ public class Character extends GameObject implements Collidable {
     private boolean isInvincible;
     private float invincibilityTime;
     private float x,previousX;
-
     private float y,previousY;
-
 
     private float powerUpTimer = 0f;
     private float originalSpeed = 50f; // Store the original speed
     private Color originalColor = Color.WHITE; // Store the original color
     private Collidable lastHazardCollided = null;
-
-
-
 
     public void setGameScreen(GameScreen gameScreen) {
         this.gameScreen = gameScreen;
@@ -59,7 +54,6 @@ public class Character extends GameObject implements Collidable {
 
         this.invincibilityTime = 3f;
     }
-
 
     public void move(float delta) {
 
@@ -198,28 +192,7 @@ public class Character extends GameObject implements Collidable {
     private void handleHazardCollision() {
         gameScreen.setLives(gameScreen.getLives() - 1); // Notify GameScreen about the change in lives
         becomeInvincible();
-    }
-
-
-    private void repositionAfterCollision(Enemy enemy) {
-        // Calculate a vector away from the enemy
-        Vector2 awayFromEnemy = new Vector2(this.x - enemy.getX(), this.y - enemy.getY()).nor();
-        float repositionDistance = 1f; // Small distance
-
-        // Reposition the character
-        float newX = this.x + awayFromEnemy.x * repositionDistance;
-        float newY = this.y + awayFromEnemy.y * repositionDistance;
-
-        // Update position if valid
-        if (isPositionValid(newX, newY)) {
-            setPosition(newX, newY);
-        }
-    }
-    private boolean isPositionValid(float x, float y) {
-        return x >= 0 && x < gameScreen.getMazeWidth() &&
-                y >= 0 && y < gameScreen.getMazeHeight() &&
-                (gameScreen.checkCollision(x, y, this) == null || isInvincible);
-    }
+}
     private void becomeInvincible() {
         isInvincible = true;
         invincibilityTime = 3.0f; // 3 seconds of invincibility, for example
@@ -241,8 +214,6 @@ public class Character extends GameObject implements Collidable {
             }
         }
 
-
-
         // Handle power-up timer
         if (powerUpActive) {
             powerUpTimer -= delta;
@@ -258,9 +229,6 @@ public class Character extends GameObject implements Collidable {
             stateTime += delta; // Only update stateTime if the character is moving
         }
     }
-
-
-
     @Override
     public void draw(SpriteBatch batch) {
         if ( isInvincible) {
@@ -289,8 +257,6 @@ public class Character extends GameObject implements Collidable {
             gameScreen.updateKeyVisibility(hasKey);
         }
     }
-
-
     public float getX() {
         return x;
     }
@@ -310,21 +276,4 @@ public class Character extends GameObject implements Collidable {
     public boolean isInvincible() {
         return isInvincible;
     }
-
-    public void setInvincible(boolean invincible) {
-        isInvincible = invincible;
-    }
-
-
-
-
-    public boolean isHasKey() {
-        return hasKey;
-    }
-
-    public boolean isPowerUpActive() {
-        return powerUpActive;
-    }
-
-
 }

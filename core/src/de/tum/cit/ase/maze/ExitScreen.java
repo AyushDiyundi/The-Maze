@@ -51,14 +51,10 @@ public class ExitScreen implements Screen {
         messageLabel = new Label(isVictory ? "Victory!" : "Game Over!!", game.getSkin(), "title");
         messageLabel.setFontScale(1.7f);
         messageLabel.setAlignment(Align.center);
-        // Setup the score message label
         String scoreMessage = isVictory ? "Your Score: " + game.getGameScreen().calculateScore(): "Better Luck Next Time!!";
         scoreLabel = new Label(scoreMessage, game.getSkin(),"title");
         scoreLabel.setFontScale(.7f);
         scoreLabel.setAlignment(Align.center);
-
-
-
         // Table for the message label at the top
         Table topTable = new Table();
         topTable.top();

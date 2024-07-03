@@ -170,25 +170,14 @@ public class MazeRunnerGame extends Game {
         return characterRightAnimation;
     }
 
-    public void setCharacterRightAnimation(Animation<TextureRegion> characterRightAnimation) {
-        this.characterRightAnimation = characterRightAnimation;
-    }
-
     public Animation<TextureRegion> getCharacterLeftAnimation() {
         return characterLeftAnimation;
-    }
-
-    public void setCharacterLeftAnimation(Animation<TextureRegion> characterLeftAnimation) {
-        this.characterLeftAnimation = characterLeftAnimation;
     }
 
     public Animation<TextureRegion> getCharacterUpAnimation() {
         return characterUpAnimation;
     }
 
-    public void setCharacterUpAnimation(Animation<TextureRegion> characterUpAnimation) {
-        this.characterUpAnimation = characterUpAnimation;
-    }
 
     public SoundSettings getSoundSettings() {
         return soundSettings;

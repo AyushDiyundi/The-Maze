@@ -41,16 +41,12 @@ public class GameScreen implements Screen {
     private Animation<TextureRegion> bottomLeftEnemyAnimation;
     private Stage hudStage;
     private int lives; // Number of lives
-    private boolean hasKey;
-    private boolean powerUpActive;
-    private float powerUpTimer;
     private boolean victory;
 
     private ShapeRenderer shapeRenderer;
     private List<Image> heartImages;
     private Texture heartTexture;
     private Texture keyIconTexture;
-    private int collectedLives;
     private int totalTime;
     private boolean keyCollected = false;
     private Image keyImage;
@@ -139,10 +135,6 @@ public class GameScreen implements Screen {
         TextureRegion enemyRegion = enemyLoader.getTextureRegion(4 * 16, 5 * 16, 16, 16);
         TextureRegion lifeRegion = lifeLoader.getTextureRegion(4* 16, 0* 16, 16, 16);
         TextureRegion powerRegion = powerLoader.getTextureRegion(6* 16, 9* 16, 16, 16);
-
-        Animation<TextureRegion> bottomLeftEnemyAnimation = loadBottomLeftEnemyAnimation();
-
-
         for (int x = 0; x < mazeData.length; x++) {
             for (int y = 0; y < mazeData[x].length; y++) {
                 switch (mazeData[x][y]) {
@@ -286,13 +278,12 @@ public class GameScreen implements Screen {
                     iterator.remove();
                 }
             }
-        } System.out.println(getLives());
+        }
         if (character != null && getLives() <= 0) {
 
             goToExitScreen();
             return; // Stop further rendering and updating
         }
-        //renderCollisionBoxes();
         batch.end();
         hudStage.act(Math.min(Gdx.graphics.getDeltaTime(), 1 / 30f));
         hudStage.draw();
@@ -342,21 +333,6 @@ public class GameScreen implements Screen {
             game.goToMenu();
         }
     }
-    public void renderCollisionBoxes() {
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line); // Start drawing lines
-
-        for (GameObject gameObject : gameObjects) {
-            if (gameObject instanceof Collidable) {
-                Rectangle boundingBox = ((Collidable) gameObject).getBoundingBox();
-                shapeRenderer.setColor(Color.RED); // Set color for the bounding box
-                shapeRenderer.rect(boundingBox.x, boundingBox.y, boundingBox.width, boundingBox.height);
-            }
-        }
-
-        shapeRenderer.end(); // End drawing
-    }
-
     @Override
     public void resize(int width, int height) {
         camera.setToOrtho(false, width, height);
@@ -401,23 +377,6 @@ public class GameScreen implements Screen {
         keyIconTexture.dispose();
         hudStage.dispose();
     }
-
-    public float getSpawnX() {
-        return spawnX;
-    }
-
-    public void setSpawnX(float spawnX) {
-        this.spawnX = spawnX;
-    }
-
-    public float getSpawnY() {
-        return spawnY;
-    }
-
-    public void setSpawnY(float spawnY) {
-        this.spawnY = spawnY;
-    }
-
     public int getMazeWidth() {
         return mazeWidth;
     }
@@ -456,9 +415,6 @@ public class GameScreen implements Screen {
         keyImage.setVisible(keyCollected);
         hudStage.addActor(keyImage);
     }
-
-
-
     void addHeartImage() {
         Image heartImage = new Image(heartTexture);
         float heartSize = 50f; // Increased size
@@ -471,27 +427,6 @@ public class GameScreen implements Screen {
             Image img = heartImages.get(i);
             img.setPosition(10 + i * (heartSize + 10), Gdx.graphics.getHeight() - heartSize - 10);
         }
-    }
-    void removeHeartImage() {
-        if (!heartImages.isEmpty()) {
-            Image lastHeartImage = heartImages.remove(heartImages.size() - 1);
-            hudStage.getActors().removeValue(lastHeartImage, true);
-        }
-    }
-    private void initializeKeyImage() {
-        keyImage = new Image(keyIconTexture);
-        float keySize = 50f;
-        keyImage.setSize(keySize, keySize);
-        // Position the key above the heart images
-        float keyX = hudX;
-        float keyY = hudY + 1f; // Adjust this value to set the vertical position above the hearts
-        keyImage.setPosition(keyX, keyY);
-        hudStage.addActor(keyImage);
-        keyImage.setVisible(false); // Initially, the key is not visible
-    }
-    public void collectKey() {
-        keyCollected = true;
-        keyImage.setVisible(true); // Set the key image to be visible when collected
     }
     public void updateKeyVisibility(boolean hasKey) {
         if (keyImage != null) {
@@ -510,23 +445,6 @@ public class GameScreen implements Screen {
             addHeartImage();
         }
     }
-
-    public Animation<TextureRegion> getBottomLeftEnemyAnimation() {
-        return bottomLeftEnemyAnimation;
-    }
-
-    public SpriteBatch getBatch() {
-        return batch;
-    }
-    public void goToMenuScreen() {
-        // Stop and dispose of current music if needed
-        if (gameMusic != null) {
-            gameMusic.stop();
-            gameMusic.dispose();
-        }
-        // Transition to the menu screen
-        game.setScreen(new MenuScreen(game));
-    }
     public void goToExitScreen() {
         // You might need to stop the game music and dispose of other resources here
         int finalScore = calculateScore();
@@ -538,19 +456,8 @@ public class GameScreen implements Screen {
         game.setScreen(new ExitScreen(game,victory));
     }
 
-    public boolean isVictory() {
-        return victory;
-    }
-
     public void setVictory(boolean victory) {
         this.victory = victory;
-    }
-    public void setCollisionHandledThisFrame(boolean handled) {
-        this.collisionHandledThisFrame = handled;
-    }
-
-    public boolean isCollisionHandledThisFrame() {
-        return collisionHandledThisFrame;
     }
 
     public MazeRunnerGame getGame() {

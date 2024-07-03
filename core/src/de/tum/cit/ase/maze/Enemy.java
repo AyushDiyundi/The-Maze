@@ -21,8 +21,6 @@ public class Enemy extends GameObject implements Collidable {
     private float timer;
     private float speedReductionTimer;
     private boolean isFollowingPlayer;
-    private boolean debugMode = false; // Set to true for debugging
-
     private enum Direction {
         UP, DOWN, LEFT, RIGHT
     }
@@ -35,7 +33,7 @@ public class Enemy extends GameObject implements Collidable {
         this.y = y * 16;
         this.normalSpeed = 15f;
         this.random = new Random();
-        this.followThreshold =2*16;
+        this.followThreshold =3*16;
         this.targetPosition = new Vector2(x, y);
         this.maxDuration = random.nextFloat(3f, 6f);
         this.speed = normalSpeed;
@@ -266,11 +264,9 @@ public class Enemy extends GameObject implements Collidable {
                     speedReductionTimer = 4.0f;
                     isFollowingPlayer=false;
                     changeDirection();
-                    System.out.println("Enemy collided with non-invincible character");
                 }
                 else
                 {
-                    System.out.println("Enemy collided with invincible character");
                     changeDirection();
                 }
                 break;
@@ -280,9 +276,6 @@ public class Enemy extends GameObject implements Collidable {
     }
 
     private void changeDirection() {
-        if (debugMode) {
-            System.out.println("change direction called");
-        }
         Direction newDirection = currentDirection;
         boolean validDirectionFound = false;
 
@@ -299,10 +292,6 @@ public class Enemy extends GameObject implements Collidable {
             currentDirection = newDirection;
         } else {
             currentDirection = previousDirection;
-        }
-
-        if (debugMode) {
-            System.out.println("New direction: " + currentDirection);
         }
     }
     private boolean isPositionValid(float x, float y) {
