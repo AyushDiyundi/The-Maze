@@ -14,13 +14,13 @@ public class Character extends GameObject implements Collidable {
     private float stateTime = 0f;
     private float speed = 50f;
     private boolean isMoving;
-    private Rectangle boundingBox;
+    private final Rectangle boundingBox;
 
     // Different animations for each direction
-    private Animation<TextureRegion> upAnimation;
-    private Animation<TextureRegion> downAnimation;
-    private Animation<TextureRegion> leftAnimation;
-    private Animation<TextureRegion> rightAnimation;
+    private final Animation<TextureRegion> upAnimation;
+    private final Animation<TextureRegion> downAnimation;
+    private final Animation<TextureRegion> leftAnimation;
+    private final Animation<TextureRegion> rightAnimation;
     private GameScreen gameScreen;
     private boolean hasKey = false;
     private boolean powerUpActive = false;
@@ -112,7 +112,6 @@ public class Character extends GameObject implements Collidable {
         } else if (y > previousY) {
             currentAnimation = upAnimation;
         }
-        // You might need to add an else clause to handle the case where the character is not moving
     }
     @Override
     public void handleCollision(Collidable other) {
@@ -155,15 +154,11 @@ public class Character extends GameObject implements Collidable {
             case POWER:
                 if (!powerUpActive) {
                     gameScreen.getGame().getBuff().play();
-                    Power power = (Power) other;
                     powerUpActive = true;
                     powerUpTimer = 3f; // 3 seconds of increased speed
                     originalSpeed = speed; // Store the original speed
                     originalColor = Color.WHITE; // Store the original color
-                    speed *= 2; // Double the character's speed (adjust as needed)
-                    // Change the character's color to yellow
-                    // setColor(Color.YELLOW);
-                    // Remove the collected power-up from the gameObjects list
+                    speed *= 2; //
                     gameScreen.getGameObjects().remove(other);
                 }
                 setPosition(x,y);
@@ -221,7 +216,6 @@ public class Character extends GameObject implements Collidable {
                 // Power-up duration has ended, revert speed and color
                 powerUpActive = false;
                 speed = originalSpeed; // Restore the original speed
-                // setColor(originalColor); // Restore the original color
             }
         }
 

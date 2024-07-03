@@ -14,9 +14,9 @@ import java.util.Random;
 
 public class Maps {
 
-    private NativeFileChooser fileChooser;
+    private final NativeFileChooser fileChooser;
     private NativeFileChooserConfiguration config;
-    private MazeRunnerGame game;
+    private final MazeRunnerGame game;
 
     public Maps(NativeFileChooser fileChooser, MazeRunnerGame game) {
         this.game = game;
@@ -44,7 +44,7 @@ public class Maps {
                 handleFileChosen(Gdx.files.internal("maps/level-4.properties"));
                 break;
             case 5:
-                handleFileChosen(Gdx.files.internal("maps/level-5.properties"));;
+                handleFileChosen(Gdx.files.internal("maps/level-5.properties"));
                 break;
             case 6:
                 externalMap();

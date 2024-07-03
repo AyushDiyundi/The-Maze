@@ -4,18 +4,15 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
@@ -24,7 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 
 public class GameScreen implements Screen {
-    private MazeRunnerGame game;
+    private final MazeRunnerGame game;
     private SpriteBatch batch;
     private OrthographicCamera camera;
     private List<GameObject> gameObjects;
@@ -32,31 +29,22 @@ public class GameScreen implements Screen {
     private Character character;
     private int mazeWidth, mazeHeight;
     private TextureLoader textureLoader, enemyLoader,lifeLoader,powerLoader,keyLoader;
-    private final float CAMERA_PADDING = 0.1f;
     private float spawnX, spawnY;
-    private int[][] mazeData;
-    private float initialZoom;
-    private float minCameraX, maxCameraX, minCameraY, maxCameraY;
+    private final int[][] mazeData;
     private List<Vector2> enemySpawnPoints;
     private Animation<TextureRegion> bottomLeftEnemyAnimation;
     private Stage hudStage;
     private int lives; // Number of lives
     private boolean victory;
 
-    private ShapeRenderer shapeRenderer;
     private List<Image> heartImages;
     private Texture heartTexture;
     private Texture keyIconTexture;
     private int totalTime;
-    private boolean keyCollected = false;
     private Image keyImage;
-    private float hudX; // Add these two fields
-    private float hudY;
     private static final int BASE_SCORE = 1000;
     private static final int SCORE_PER_LIFE = 100;
     private static final int TIME_PENALTY = 10;
-    private boolean collisionHandledThisFrame;
-
 
 
     private void loadHudTextures() {
@@ -80,7 +68,6 @@ public class GameScreen implements Screen {
         gameMusic = Gdx.audio.newMusic(Gdx.files.internal("InGame.mp3"));
         bottomLeftEnemyAnimation = loadBottomLeftEnemyAnimation();
         calculateMazeDimensions();
-        shapeRenderer = new ShapeRenderer();
     }
 
 
@@ -92,38 +79,8 @@ public class GameScreen implements Screen {
         this.victory=false;
         loadHudTextures();
         initialize(); // This will now properly initialize enemySpawnPoints before loadGameObjects is called
-        initialZoom = calculateInitialZoom();
-        calculateCameraConstraints();
-
         loadGameObjects(mazeData); // This is where game objects are actually loaded
         initializeHUD();
-    }
-
-
-    private float calculateInitialZoom() {
-        // Calculate the initial zoom level based on maze and window dimensions
-        float horizontalZoom = (float) Gdx.graphics.getWidth() / mazeWidth;
-        float verticalZoom = (float) Gdx.graphics.getHeight() / mazeHeight;
-
-        // Choose the smaller zoom factor to ensure the entire maze fits
-        return Math.min(horizontalZoom, verticalZoom);
-    }
-
-    private void calculateCameraConstraints() {
-        // Calculate camera position constraints based on zoom level
-        float cameraWidth = Gdx.graphics.getWidth() / camera.zoom;
-        float cameraHeight = Gdx.graphics.getHeight() / camera.zoom;
-
-        // Calculate the middle 80% of the screen
-        float paddingX = cameraWidth * 0.1f;
-        float paddingY = cameraHeight * 0.1f;
-
-        // Set camera position constraints
-        minCameraX = paddingX;
-        maxCameraX = mazeWidth - cameraWidth + paddingX;
-        minCameraY = paddingY;
-        maxCameraY = mazeHeight - cameraHeight + paddingY;
-
     }
 
     private void loadGameObjects(int[][] mazeData) {
@@ -133,7 +90,7 @@ public class GameScreen implements Screen {
         TextureRegion exitRegion = textureLoader.getTextureRegion(0, 6 * 16, 16, 16);
         TextureRegion trapRegion = textureLoader.getTextureRegion(4* 16, 7 * 16, 16, 16);
         TextureRegion enemyRegion = enemyLoader.getTextureRegion(4 * 16, 5 * 16, 16, 16);
-        TextureRegion lifeRegion = lifeLoader.getTextureRegion(4* 16, 0* 16, 16, 16);
+        TextureRegion lifeRegion = lifeLoader.getTextureRegion(4* 16, 0, 16, 16);
         TextureRegion powerRegion = powerLoader.getTextureRegion(6* 16, 9* 16, 16, 16);
         for (int x = 0; x < mazeData.length; x++) {
             for (int y = 0; y < mazeData[x].length; y++) {
@@ -222,8 +179,7 @@ public class GameScreen implements Screen {
             if (gameObject == object) {
                 continue;
             }
-            if (gameObject instanceof Collidable) {
-                Collidable collidable = (Collidable) gameObject;
+            if (gameObject instanceof Collidable collidable) {
 
                 // Check for an overlap between the two objects
                 if (potentialBounds.overlaps(collidable.getBoundingBox())) {
@@ -247,10 +203,9 @@ public class GameScreen implements Screen {
         if (character != null) {
             character.move(delta); // Update character movement
             character.update(delta); // Update character state
-            updateCameraPosition(delta); // Update the camera to follow the character
+            updateCameraPosition(); // Update the camera to follow the character
         }
         totalTime += delta;
-        collisionHandledThisFrame = false;
         // Update the camera and set the projection matrix
         camera.update();
         batch.setProjectionMatrix(camera.combined);
@@ -271,8 +226,7 @@ public class GameScreen implements Screen {
         }
         for (Iterator<GameObject> iterator = gameObjects.iterator(); iterator.hasNext();) {
             GameObject gameObject = iterator.next();
-            if (gameObject instanceof Key) {
-                Key key = (Key) gameObject;
+            if (gameObject instanceof Key key) {
                 if (key.isCollected()) {
                     // Remove the collected key from the gameObjects list
                     iterator.remove();
@@ -300,7 +254,7 @@ public class GameScreen implements Screen {
     }
 
 
-    private void updateCameraPosition(float delta) {
+    private void updateCameraPosition() {
         float lerp = 0.1f; // Adjust this value as needed for smoother camera movement
         if (character != null) {
             float targetX = character.getX() + 14 / 2;
@@ -337,7 +291,6 @@ public class GameScreen implements Screen {
     public void resize(int width, int height) {
         camera.setToOrtho(false, width, height);
         camera.update();
-        calculateCameraConstraints();
         hudStage.getViewport().update(width, height, true);
     }
 
@@ -412,6 +365,7 @@ public class GameScreen implements Screen {
         float keySize = 50f; // Increased size
         keyImage.setSize(keySize, keySize);
         keyImage.setPosition(Gdx.graphics.getWidth() - keySize - 10, Gdx.graphics.getHeight() - keySize - 10);
+        boolean keyCollected = false;
         keyImage.setVisible(keyCollected);
         hudStage.addActor(keyImage);
     }

@@ -61,9 +61,7 @@ public class MazeRunnerGame extends Game {
     // Utility method to extract animation frames
     private Animation<TextureRegion> extractAnimation(TextureRegion[][] spriteSheet, int row, int frameCount) {
         TextureRegion[] animationFrames = new TextureRegion[frameCount];
-        for (int col = 0; col < frameCount; col++) {
-            animationFrames[col] = spriteSheet[row][col];
-        }
+        System.arraycopy(spriteSheet[row], 0, animationFrames, 0, frameCount);
         return new Animation<>(0.1f, animationFrames);
     }
 
@@ -117,11 +115,11 @@ public class MazeRunnerGame extends Game {
         if (skin != null) {
             skin.dispose();
         }
-        ;if(hurt !=null)
+        if(hurt !=null)
             hurt.dispose();
-        ;if(buff!=null)
+        if(buff!=null)
             buff.dispose();
-        ;if(unlock !=null)
+        if(unlock !=null)
             unlock.dispose();
         if (spriteBatch != null) {
             spriteBatch.dispose();

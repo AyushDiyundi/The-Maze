@@ -20,11 +20,11 @@ public class ExitScreen implements Screen {
 
     private final Stage stage;
     private final MazeRunnerGame game;
-    private SpriteBatch batch;
+    private final SpriteBatch batch;
     private Label messageLabel,scoreLabel;
     private Texture backgroundTexture;
     private Music exitMusic;
-    private boolean isVictory;
+    private final boolean isVictory;
 
 
     public ExitScreen(MazeRunnerGame game, boolean isVictory) {

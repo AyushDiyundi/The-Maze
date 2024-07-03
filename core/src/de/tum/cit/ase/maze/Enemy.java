@@ -254,7 +254,7 @@ public class Enemy extends GameObject implements Collidable {
         ObjectType type = other.getObjectType();
 
         switch (type) {
-            case WALL,TRAP,ENEMY,ENTRY,EXIT:
+            case WALL,ENTRY,EXIT:
                 changeDirection();
                 break;
             case CHARACTER:

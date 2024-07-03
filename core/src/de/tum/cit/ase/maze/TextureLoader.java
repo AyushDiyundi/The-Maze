@@ -3,7 +3,7 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 public class TextureLoader {
-    private Texture tilesetTexture;
+    private final Texture tilesetTexture;
 
     public TextureLoader(FileHandle path) {
         tilesetTexture = new Texture(path);

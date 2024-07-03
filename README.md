@@ -15,7 +15,7 @@ The project is organized into the `de.tum.cit.ase.maze` package with several key
 
 ## Running the Game
 To run Maze Runner:
-
+YOU CAN DOWNLOAD THE .exe file from the exe folder.
 1. Ensure you have Java and the LibGDX framework set up on your development environment.
 2. Clone the repository to your local machine.
 3. Open the project in an IDE like IntelliJ IDEA or Eclipse.
@@ -56,9 +56,7 @@ Represents an extra life collectible in the game.
 - `isCollected()`: Checks if the life has been collected by the player.
 
 ### Power
-Represents a power-up in the game.
-
-- No specific methods documented, presumed to alter player abilities temporarily.
+Represents a power-up in the game, gives you speed buff!
 
 ## Additional Notes
 - The game is currently in development. Future updates may introduce new mechanics and levels.
@@ -67,5 +65,3 @@ Represents a power-up in the game.
 ## Contributions
 We welcome contributions to the Maze Runner game. Please read `CONTRIBUTING.md` for guidelines on how to submit issues and pull requests.
 
-## License
-Maze Runner is open-sourced under the MIT license. See `LICENSE` for more information.

@@ -26,11 +26,14 @@ public class MenuScreen implements Screen {
 
     private final Stage stage;
     private final MazeRunnerGame game;
-    private SpriteBatch batch;
-    private Label welcomeLabel, pausedLabel, gameOver, victory,levelLabel,soundSettingsLabel;
-    private boolean pauseMenuVisible;
-    private Texture backgroundTexture;
-    private Music menuMusic;
+    private final SpriteBatch batch;
+    private Label welcomeLabel;
+    private Label pausedLabel;
+    private Label levelLabel;
+    private Label soundSettingsLabel;
+    private final boolean pauseMenuVisible;
+    private final Texture backgroundTexture;
+    private final Music menuMusic;
     /**
      * Constructor for the MenuScreen. Initializes the main components used in the menu screen,
      * including the stage, camera, and music.
